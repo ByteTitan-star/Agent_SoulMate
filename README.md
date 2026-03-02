@@ -7,7 +7,7 @@ Milvus
 Ollama
 License
 
-![Agent Voice 首页界面](./figures/Agent-Voice-home.png)
+![Agent Voice 首页界面](./figures/Agent-SoulMate-home.png)
 
 一个可扩展的全栈 AI 伴侣应用：支持用户创建/发布角色（UGC）、文本与语音对话、角色知识库、工具调用。
 
