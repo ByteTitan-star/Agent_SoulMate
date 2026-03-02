@@ -1,4 +1,4 @@
-# AI Soulmate: 本地大模型驱动的 UGC 语音伴侣平台
+# AI SoulMate: 本地大模型驱动的 UGC 灵魂伴侣平台
 
 ![Agent Voice 首页界面](./figures/Agent-SoulMate-home.png)
 
