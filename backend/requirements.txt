@@ -1,0 +1,42 @@
+# Django & API
+Django>=4.2,<5
+djangorestframework>=3.14
+django-cors-headers>=4.3
+djangorestframework-simplejwt>=5.3
+Pillow>=10.0
+
+# Async & WebSocket
+channels>=4.0
+channels-redis>=4.2
+daphne>=4.0
+
+# Database
+psycopg2-binary>=2.9
+
+# LangChain & LLM
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-community>=0.0.20
+langchain-milvus>=0.1.7
+langchain-ollama>=0.1.0
+openai>=1.12
+
+# Embeddings & Vector
+pymilvus>=2.4.6
+tiktoken>=0.5
+
+# Document loaders (RAG)
+pypdf>=4.0
+
+# ASR 使用 OpenAI Whisper API 或本地 whisper（pip install openai-whisper）
+# TTS 使用 ElevenLabs（见 .env.example）
+httpx>=0.26
+
+# Env
+python-dotenv>=1.0
+
+
+# pip install curl_cffi
+# Successfully installed curl_cffi-0.14.0
+
+#  pip install tiktoken

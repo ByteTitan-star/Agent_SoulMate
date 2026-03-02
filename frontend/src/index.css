@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --soul-cream: #faf8f5;
+  --soul-sand: #e8e2d9;
+  --soul-sage: #9a9b7a;
+  --soul-rose: #c1666b;
+  --soul-terracotta: #b85c4a;
+  --soul-deep: #2d2a26;
+  --soul-ink: #1a1917;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply font-body text-soul-ink antialiased;
+  background: var(--soul-cream);
+}
+
+/* 细腻背景纹理 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-soul-sand/50 rounded-full;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-soul-sage/60 rounded-full hover:bg-soul-sage;
+}
+
+.scrollbar-soft {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(154, 155, 122, 0.7) rgba(232, 226, 217, 0.35);
+}
+
+.scrollbar-soft::-webkit-scrollbar {
+  width: 10px;
+}
+
+.scrollbar-soft::-webkit-scrollbar-track {
+  background: rgba(232, 226, 217, 0.35);
+  border-radius: 999px;
+}
+
+.scrollbar-soft::-webkit-scrollbar-thumb {
+  background: rgba(154, 155, 122, 0.72);
+  border-radius: 999px;
+  border: 2px solid rgba(250, 248, 245, 0.9);
+}
+
+.scrollbar-gutter-stable {
+  scrollbar-gutter: stable both-edges;
+}
