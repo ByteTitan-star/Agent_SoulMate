@@ -1,0 +1,79 @@
+# Pre-commit hooks for AI SoulMate.
+#
+# First-time setup (from the repository root, inside an activated venv that has
+# the requirements-dev.txt tools installed):
+#
+#   pip install -r backend/requirements.txt -r requirements-dev.txt
+#   pre-commit install --hook-type pre-commit --hook-type commit-msg
+#
+# Hooks use the active interpreter (language: system) so they share the project
+# venv — keeping tool versions identical to CI.
+#
+# Note: mypy is intentionally omitted from the gate (legacy Django + LangChain
+# code is not yet typed). See pyproject.toml [tool.mypy] to opt in per module.
+
+default_language_version:
+  python: python3.12
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+        exclude: ^backend/skills/
+      - id: trailing-whitespace
+        exclude: ^backend/skills/
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=2048"]
+        exclude: ^backend/skills/
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+        exclude: ^backend/skills/
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.11
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: secret-scan
+        name: secret-scan
+        entry: python scripts/secret_scan.py --staged
+        language: system
+        pass_filenames: false
+
+      - id: bandit
+        name: bandit
+        entry: python -m bandit -q -ll -r backend/core backend/config -c pyproject.toml
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+
+      - id: markdownlint-cli2
+        name: markdownlint-cli2
+        entry: npx --yes markdownlint-cli2@0.17.2
+        language: system
+        files: \.(md|markdown)$
+        pass_filenames: false
+
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          - feat
+          - fix
+          - refactor
+          - perf
+          - test
+          - docs
+          - build
+          - ci
+          - chore

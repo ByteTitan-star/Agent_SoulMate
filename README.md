@@ -124,18 +124,58 @@ CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 
 ```text
 .
-├─ docker-compose.yml
-├─ frontend/
+├─ docker-compose.yml          # Milvus / Redis / etcd / MinIO
+├─ frontend/                   # React 18 + Vite + Tailwind
 │  └─ src/
 ├─ backend/
-│  ├─ config/
-│  └─ core/
-│     ├─ models.py
-│     ├─ views/
-│     ├─ services/
-│     └─ consumers.py
+│  ├─ config/                  # Django project (settings / urls / asgi / wsgi)
+│  ├─ core/                    # core Django app
+│  │  ├─ models.py
+│  │  ├─ views/                # auth / character / chat / stats
+│  │  ├─ services/             # llm / rag / asr / tts
+│  │  └─ consumers.py          # WebSocket streaming
+│  ├─ skills/                  # runtime skills live here (weather_skill, news_skill, …)
+│  ├─ manage.py
+│  └─ requirements.txt
 └─ README.md
 ```
+
+> Skills are loaded as a proper Python package (`from skills.weather_skill import ...`)
+> from `backend/skills/`, not from the repository root.
+
+## Development & Code Quality
+
+First-time setup (inside an activated venv):
+
+```bash
+pip install -r backend/requirements.txt -r requirements-dev.txt
+pre-commit install --hook-type pre-commit --hook-type commit-msg
+```
+
+Every commit then runs **ruff** (format + lint), **bandit** (security), a local
+**secret-scan**, **markdownlint**, and **conventional-commit** message checks.
+GitLab CI (`.gitlab-ci.yml`) mirrors these gates on every MR / push to `main`:
+`frontend_build` → `quality_static` / `quality_tests` / `quality_security` /
+`quality_markdown`. Vendored assets under `backend/skills/` are excluded from
+all scans.
+
+```bash
+pytest                          # tests (Django configured via tests/conftest.py)
+ruff check backend tests && ruff format --check backend tests
+bandit -q -ll -r backend/core backend/config -c pyproject.toml
+python scripts/secret_scan.py --all-files
+```
+
+> **Note on type checking:** mypy is intentionally omitted from the enforced
+> gate — the legacy Django + LangChain code is not yet typed. A `[tool.mypy]`
+> config is kept in `pyproject.toml` for gradual, module-by-module adoption.
+
+### Token usage log
+
+The LLM token-usage log path is configurable via `TOKEN_LOG_PATH` (see
+`backend/.env.example`). It defaults to a project-local file
+(`backend/data/token_usage.md`); set it to a shared path to keep cross-project
+aggregation.
 
 ## Roadmap
 
@@ -148,7 +188,9 @@ CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 
 ## Disclaimer
 
-This project uses local models by default and does not rely on remote OpenAI official LLM APIs.
+This project uses local models by default and does not rely on remote OpenAI
+official LLM APIs.
+
 ---
 
-*Developed with ❤️ by ByteTitan-star*
+*Developed by ByteTitan-star*

@@ -1,15 +1,24 @@
-from .auth_views import AuthMeView, AuthLoginView, AuthRegisterView, AuthLogoutView
-from .character_views import CharacterListCreateView, CharacterMineView, CharacterDetailView
+from .auth_views import AuthLoginView, AuthLogoutView, AuthMeView, AuthRegisterView
+from .character_views import CharacterDetailView, CharacterListCreateView, CharacterMineView
 from .chat_views import (
-    ChatStreamView,
-    ChatHistoryView,
-    ChatHistoryItemView,
-    DocumentUploadView,
     CharacterVoiceCloneView,
+    ChatHistoryItemView,
+    ChatHistoryView,
+    ChatStreamView,
+    DocumentUploadView,
 )
 
 __all__ = [
-    'AuthMeView', 'AuthLoginView', 'AuthRegisterView', 'AuthLogoutView',
-    'CharacterListCreateView', 'CharacterMineView', 'CharacterDetailView',
-    'ChatStreamView', 'ChatHistoryView', 'ChatHistoryItemView', 'DocumentUploadView', 'CharacterVoiceCloneView',
+    'AuthLoginView',
+    'AuthLogoutView',
+    'AuthMeView',
+    'AuthRegisterView',
+    'CharacterDetailView',
+    'CharacterListCreateView',
+    'CharacterMineView',
+    'CharacterVoiceCloneView',
+    'ChatHistoryItemView',
+    'ChatHistoryView',
+    'ChatStreamView',
+    'DocumentUploadView',
 ]

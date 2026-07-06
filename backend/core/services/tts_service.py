@@ -3,15 +3,16 @@ TTS + Voice Cloning 服务：
 - text_to_speech_bytes：文本转语音
 - clone_voice_from_wav：上传参考音频克隆音色（ElevenLabs）
 """
+
 from __future__ import annotations
 
-from typing import Optional, Dict, Any
+from typing import Any
 
 import httpx
 from django.conf import settings
 
 
-def text_to_speech_bytes(text: str, voice_id: Optional[str] = None) -> bytes:
+def text_to_speech_bytes(text: str, voice_id: str | None = None) -> bytes:
     """
     ElevenLabs TTS。失败返回空 bytes，调用方自行决定兜底策略。
     """
@@ -45,7 +46,7 @@ def clone_voice_from_wav(
     filename: str,
     voice_name: str,
     description: str = '',
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     调用 ElevenLabs Voice Cloning API，返回:
     {'ok': True, 'voice_id': 'xxx', 'provider': 'elevenlabs'}

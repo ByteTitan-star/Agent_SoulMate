@@ -1,19 +1,16 @@
 from datetime import timedelta
-from typing import Optional
 
 from django.db.models import Count
 from django.db.models.functions import TruncDate, TruncMonth
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
+from langchain_core.messages import HumanMessage
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from langchain_core.messages import HumanMessage
-
 from ..models import Message
 from ..services.llm_service import _get_llm
-
 
 PRESET_RANGE_DAYS = {
     'today': 1,
@@ -30,7 +27,7 @@ PRESET_RANGE_DAYS = {
 }
 
 
-def _parse_query_datetime(value: Optional[str], *, end_of_day: bool = False):
+def _parse_query_datetime(value: str | None, *, end_of_day: bool = False):
     """解析查询参数中的日期/时间，兼容 YYYY-MM-DD 与 ISO datetime。"""
     if not value:
         return None
@@ -126,12 +123,7 @@ def get_chat_stats(request):
     use_month_bucket = range_key in {'1y', 'year', 'all'} or span_days > 120
 
     bucket_expr = TruncMonth('created_at') if use_month_bucket else TruncDate('created_at')
-    rows = (
-        qs.annotate(bucket=bucket_expr)
-        .values('bucket')
-        .annotate(count=Count('id'))
-        .order_by('bucket')
-    )
+    rows = qs.annotate(bucket=bucket_expr).values('bucket').annotate(count=Count('id')).order_by('bucket')
 
     chart_data = []
     for item in rows:

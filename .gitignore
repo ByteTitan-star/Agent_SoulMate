@@ -1,0 +1,59 @@
+# --- Environment / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.bandit/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+report.xml
+*.egg
+
+# --- Virtualenvs ---
+.venv/
+venv/
+env/
+
+# --- Django runtime state ---
+backend/db.sqlite3
+backend/staticfiles/
+backend/media/
+backend/data/
+backend/logs/
+
+# --- Docker volumes (compose-managed) ---
+volumes/
+
+# --- Node / frontend ---
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# --- Logs / temp ---
+*.log
+logs/
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Claude / local tooling ---
+.claude/
+
+# --- CI caches ---
+.cache/
+.ci-node/

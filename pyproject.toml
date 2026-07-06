@@ -1,0 +1,98 @@
+# Tool configuration for AI SoulMate.
+# Runtime dependencies live in backend/requirements.txt; dev tooling in requirements-dev.txt.
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["backend"]
+extend-exclude = [
+    ".venv",
+    "build",
+    "dist",
+    "frontend/dist",
+    "frontend/node_modules",
+    # Vendored Anthropic skill assets (docx/pptx/xlsx/...) — not our code.
+    "backend/skills",
+    "backend/data",
+    "backend/logs",
+    "volumes",
+]
+
+[tool.ruff.lint]
+# Focused, low-noise rule set suitable for a legacy Django codebase.
+select = ["E", "W", "F", "I", "UP", "RUF"]
+ignore = [
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    # RUF012 (mutable class attr → ClassVar) is noisy on Django Meta / serializer Meta
+    # inner classes; adopting it is a separate, module-by-module effort.
+    "RUF012",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"backend/config/settings.py" = ["E501"]
+"backend/config/**" = ["E402"]
+"backend/core/migrations/**" = ["E501"]
+# Legacy files with a few pre-existing long lines (Chinese prose / wide tables).
+"backend/core/consumers.py" = ["E501"]
+"backend/core/services/default_characters.py" = ["E501"]
+"backend/core/views/chat_views.py" = ["E501"]
+
+[tool.ruff.format]
+quote-style = "preserve"
+
+# NOTE: mypy is intentionally omitted from the enforced gate for now — the
+# legacy Django + LangChain code is not yet typed. The config below is kept so
+# mypy can be adopted module-by-module later. Run manually with:
+#   mypy --ignore-missing-imports <module>
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "backend"
+strict = false
+ignore_missing_imports = true
+follow_imports = "skip"
+exclude = [
+    "build/",
+    "dist/",
+    "frontend/",
+    "backend/skills/",
+    "backend/data/",
+    "backend/logs/",
+    "backend/core/migrations/",
+]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["backend"]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["backend/core", "backend/skills"]
+omit = ["*/migrations/*", "backend/skills/*/scripts/**"]
+
+[tool.coverage.report]
+fail_under = 0
+show_missing = true
+skip_covered = false
+
+[tool.bandit]
+skips = ["B104", "B310", "B314", "B324", "B405", "B608"]
+exclude_dirs = [
+    ".cache",
+    ".venv",
+    "build",
+    "dist",
+    "frontend/node_modules",
+    "frontend/dist",
+    "backend/skills",
+    "backend/data",
+    "backend/logs",
+    "volumes",
+    "tests",
+]

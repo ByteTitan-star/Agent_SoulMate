@@ -1,0 +1,113 @@
+# GitLab CI for AI SoulMate.
+#
+# Quality-gate split mirroring production pipelines:
+#   frontend  → npm build smoke (React + Vite + TS)
+#   quality   → static (ruff) + tests (pytest+coverage) + security (bandit/secret-scan) + markdown
+# Requires: GitLab runner with Docker executor (default shared runners OK).
+
+default:
+  image: python:3.12-slim
+  interruptible: true
+
+variables:
+  PIP_CACHE_DIR: "${CI_PROJECT_DIR}/.cache/pip"
+  FORCE_COLOR: "0"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  # SQLite is used in CI (no Postgres configured); see backend/config/settings.py.
+  DJANGO_SETTINGS_MODULE: "config.settings"
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_TAG
+
+stages:
+  - frontend
+  - quality
+
+.pip_cache: &pip_cache
+  cache:
+    key:
+      files:
+        - backend/requirements.txt
+        - requirements-dev.txt
+    paths:
+      - .cache/pip
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install -r backend/requirements.txt -r requirements-dev.txt
+
+frontend_build:
+  stage: frontend
+  image: node:20-bookworm-slim
+  cache:
+    key:
+      files:
+        - frontend/package-lock.json
+    paths:
+      - frontend/node_modules/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main"
+  script:
+    - cd frontend && npm ci && npm run build
+  artifacts:
+    paths:
+      - frontend/dist/
+    expire_in: 1 week
+
+quality_static:
+  stage: quality
+  <<: *pip_cache
+  script:
+    # ruff respects extend-exclude (vendored backend/skills/**) from pyproject.toml.
+    - ruff format --check backend tests
+    - ruff check backend tests
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main"
+
+quality_tests:
+  stage: quality
+  <<: *pip_cache
+  script:
+    - pytest --cov --cov-branch --cov-report=term-missing --cov-report=xml:coverage.xml --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: report.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage.xml
+    paths:
+      - coverage.xml
+    expire_in: 1 week
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main"
+
+quality_security:
+  stage: quality
+  <<: *pip_cache
+  script:
+    - bandit -q -ll -r backend/core backend/config -c pyproject.toml
+    - python scripts/secret_scan.py --all-files
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main"
+
+quality_markdown:
+  stage: quality
+  image: node:20-bookworm-slim
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - "**/*.md"
+    - if: $CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "main"
+      changes:
+        - "**/*.md"
+    - when: never
+  script:
+    - cd "${CI_PROJECT_DIR:-.}"
+    - npx --yes markdownlint-cli2@0.17.2

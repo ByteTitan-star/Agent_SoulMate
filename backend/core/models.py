@@ -1,7 +1,8 @@
 import uuid
-from django.db import models
-from django.contrib.auth.models import AbstractUser
+
 from django.conf import settings
+from django.contrib.auth.models import AbstractUser
+from django.db import models
 
 
 def character_avatar_path(instance, filename):
@@ -72,6 +73,7 @@ class Message(models.Model):
 
 class KnowledgeBase(models.Model):
     """角色专属知识库（RAG 集合）"""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     character = models.OneToOneField(Character, on_delete=models.CASCADE, related_name='knowledge_base')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -82,6 +84,7 @@ class KnowledgeBase(models.Model):
 
 class DocumentChunk(models.Model):
     """上传文档后的分块记录，向量在 Milvus 中"""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     knowledge_base = models.ForeignKey(KnowledgeBase, on_delete=models.CASCADE, related_name='chunks')
     source_file = models.CharField('来源文件名', max_length=255)
