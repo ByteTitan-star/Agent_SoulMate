@@ -24,11 +24,11 @@ A scalable full-stack AI companion application that supports user-created/publis
 
 ```mermaid
 flowchart LR
-  A[React Web] -->|HTTP/WS| B[Django + DRF + Channels]
-  B -->|LLM Chat| C[Ollama API :11434]
-  B -->|RAG Retrieve| D[Milvus :19530]
-  B -->|ASR/TTS| E[Whisper / ElevenLabs]
-  B --> F[(PostgreSQL/SQLite)]
+  A["React Web"] -->|HTTP/WS| B["Django + DRF + Channels"]
+  B -->|LLM Chat| C["Ollama API :11434"]
+  B -->|RAG Retrieve| D["Milvus :19530"]
+  B -->|ASR/TTS| E["Whisper / ElevenLabs"]
+  B --> F["PostgreSQL/SQLite"]
 
 
 
