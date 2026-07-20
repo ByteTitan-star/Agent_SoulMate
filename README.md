@@ -1,5 +1,7 @@
 # AI SoulMate: A Local LLM-Driven UGC Soulmate Platform
 
+A scalable full-stack AI companion application that supports user-created/published characters (UGC), text and voice conversations, character knowledge bases, and tool usage.
+
 ![Agent Voice Home Interface](./figures/Agent-SoulMate-home.png)
 
 A scalable full-stack AI companion application that supports user-created/published characters (UGC), text and voice conversations, character knowledge bases, and tool usage.
@@ -9,8 +11,8 @@ A scalable full-stack AI companion application that supports user-created/publis
 - **Local Model First**: Leverages `qwen2.5:14b` deployed locally via Ollama (OpenAI-compatible interface) to power conversation capabilities.
 - **Character UGC**: Create multiple characters, define personas, opening lines, avatars, voice tones, and publish them to a character square.
 - **Real-time Communication**: Django Channels + WebSocket support streaming conversations.
-- **RAG Capabilities**: Characters can be bound to private knowledge bases (to be migrated to Milvus).
-- **Voice Pipeline**: ASR + TTS (future extension).
+- **RAG Capabilities**: Characters can be bound to private knowledge bases via Milvus vector database.
+- **Voice Pipeline**: ASR + TTS integration (planned).
 
 ## Tech Stack
 
@@ -29,7 +31,7 @@ flowchart LR
   B -->|RAG Retrieve| D["Milvus :19530"]
   B -->|ASR/TTS| E["Whisper / ElevenLabs"]
   B --> F["PostgreSQL/SQLite"]
-
+```
 
 
 ## Quick Start
@@ -122,7 +124,7 @@ CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 
 ## Project Structure
 
-```text
+```plaintext
 .
 ├─ docker-compose.yml          # Milvus / Redis / etcd / MinIO
 ├─ frontend/                   # React 18 + Vite + Tailwind
