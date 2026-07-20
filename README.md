@@ -4,7 +4,6 @@ A scalable full-stack AI companion application that supports user-created/publis
 
 ![Agent Voice Home Interface](./figures/Agent-SoulMate-home.png)
 
-A scalable full-stack AI companion application that supports user-created/published characters (UGC), text and voice conversations, character knowledge bases, and tool usage.
 
 ## Core Features
 
