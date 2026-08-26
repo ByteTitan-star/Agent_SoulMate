@@ -1,13 +1,15 @@
 # 💬 Agent SoulMate
 
 <p align="center">
-  <a href="https://github.com/ByteTitan-star/Agent_SoulMate/releases/tag/v1.0.0"><img src="https://img.shields.io/badge/Agent%20SoulMate-v1.0.0-0891b2" alt="Agent SoulMate v1.0.0" /></a>
+  <a href="https://github.com/ByteTitan-star/Agent_SoulMate/releases/tag/v1.0.0"><img src="https://img.shields.io/badge/Agent%20SoulMate-v1.0.0-14b8a6" alt="Agent SoulMate v1.0.0" /></a>
   <img src="https://img.shields.io/badge/python-3.12-3776AB" alt="Python 3.12" />
   <img src="https://img.shields.io/badge/Django-4.2-092E20" alt="Django 4.2" />
-  <img src="https://img.shields.io/badge/React-18-61DAFB" alt="React 18" />
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT" /></a>
-  <a href="./README.md"><img src="https://img.shields.io/badge/English-0A66C2" alt="English" /></a>
-  <img src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-555555" alt="Chinese" />
+  <img src="https://img.shields.io/badge/React-18-087EA4" alt="React 18" />
+  <img src="https://img.shields.io/badge/Ollama-local-111111" alt="Ollama local" />
+  <img src="https://img.shields.io/badge/Milvus-00A1EA" alt="Milvus" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-CA8A04" alt="License: MIT" /></a>
+  <a href="./README.md"><img src="https://img.shields.io/badge/English-2563eb" alt="English" /></a>
+  <img src="https://img.shields.io/badge/%E4%B8%AD%E6%96%87-374151" alt="Chinese" />
 </p>
 
 > 本地大模型优先的 AI 伴侣平台：支持 UGC 角色创建与发布、实时流式对话、
