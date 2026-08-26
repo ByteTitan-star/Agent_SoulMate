@@ -18,6 +18,8 @@ from urllib.parse import quote_plus
 import httpx
 from django.conf import settings
 
+from .tool_orchestrator import run_tool_orchestration
+
 # Token usage log path. Configurable via TOKEN_LOG_PATH; defaults to backend/data.
 TOKEN_MD_PATH = os.environ.get(
     "TOKEN_LOG_PATH",
@@ -100,6 +102,7 @@ def build_system_prompt(character) -> str:
         '回答要自然、简洁，不要重复句子。直接回应用户当前问题；'
         '如果提供了【知识库检索结果】，请优先依据其内容作答并给出可执行建议；'
         '如果查询了工具，请自然地把工具结果总结给用户。'
+        '当用户需要实时天气或资讯时，请调用可用工具获取数据，不要编造。'
     )
 
     # parts就是系统提示词
@@ -109,10 +112,12 @@ def build_system_prompt(character) -> str:
 # tool装饰器，把普通的函数标记AI调用的工具
 @tool
 def weather_tool(city: str) -> str:
-    """查询城市天气。输入示例：北京"""
+    """查询城市实时天气。输入示例：北京"""
     city = (city or '').strip()
     if not city:
         return '天气工具：缺少城市名'
+    if SKILLS_LOADED:
+        return get_realtime_weather(city)
     timeout = float(getattr(settings, 'TOOL_HTTP_TIMEOUT', 8))
     url = f'https://wttr.in/{quote_plus(city)}?format=j1'
     try:
@@ -135,6 +140,8 @@ def news_tool(query: str) -> str:
     query = (query or '').strip()
     if not query:
         return '资讯工具：缺少关键词'
+    if SKILLS_LOADED:
+        return get_realtime_news(query)
     timeout = float(getattr(settings, 'TOOL_HTTP_TIMEOUT', 8))
     rss_url = f'https://news.google.com/rss/search?q={quote_plus(query)}&hl=zh-CN&gl=CN&ceid=CN:zh-Hans'
     try:
@@ -226,6 +233,18 @@ def _get_tool_context(user_message: str) -> str:
     return '\n\n'.join([r for r in tool_results if r])
 
 
+def _get_agent_tools() -> list:
+    return [weather_tool, news_tool]
+
+
+def _apply_legacy_tool_context(messages: list, tool_context: str) -> list:
+    if not tool_context:
+        return messages
+    last = messages[-1]
+    content = getattr(last, 'content', '') or ''
+    return [*messages[:-1], HumanMessage(content=f'{content}\n\n【工具结果】\n{tool_context}')]
+
+
 # def stream_chat(
 #     character,
 #     session_id: str,
@@ -308,13 +327,10 @@ def stream_chat(
         return
 
     rag_context = _get_rag_context(rag_retriever, user_message)
-    tool_context = _get_tool_context(user_message)
 
     input_text = user_message
     if rag_context:
         input_text += f'\n\n【知识库检索结果】\n{rag_context}'
-    if tool_context:
-        input_text += f'\n\n【工具结果】\n{tool_context}'
 
     messages = [SystemMessage(content=system_text)]
     for h in history_messages or []:
@@ -328,6 +344,25 @@ def stream_chat(
             messages.append(AIMessage(content=content))
     messages.append(HumanMessage(content=input_text))
 
+    use_orchestration = getattr(settings, 'AGENT_TOOL_ORCHESTRATION', True)
+    tool_context = ''
+    streamed = False
+    early_reply = None
+
+    if use_orchestration:
+        orch_messages, early_reply = run_tool_orchestration(llm, messages, _get_agent_tools())
+        if orch_messages is not None:
+            messages = orch_messages
+            if early_reply:
+                streamed = True
+        else:
+            tool_context = _get_tool_context(user_message)
+    else:
+        tool_context = _get_tool_context(user_message)
+
+    if tool_context:
+        messages = _apply_legacy_tool_context(messages, tool_context)
+
     # ====== 准备记录 Token 的变量 ======
     full_response = ""
     prompt_tokens = 0
@@ -337,16 +372,20 @@ def stream_chat(
     # ==================================
 
     try:
-        for chunk in llm.stream(messages):
-            token = getattr(chunk, 'content', '') or ''
-            if token:
-                full_response += token
-                yield token
+        if streamed:
+            full_response = early_reply or ''
+            yield full_response
+        else:
+            for chunk in llm.stream(messages):
+                token = getattr(chunk, 'content', '') or ''
+                if token:
+                    full_response += token
+                    yield token
 
-            # 尝试从 LangChain 较新版本中直接获取流式返回的 metadata
-            if hasattr(chunk, 'usage_metadata') and chunk.usage_metadata:
-                prompt_tokens = chunk.usage_metadata.get('input_tokens', 0)
-                comp_tokens = chunk.usage_metadata.get('output_tokens', 0)
+                # 尝试从 LangChain 较新版本中直接获取流式返回的 metadata
+                if hasattr(chunk, 'usage_metadata') and chunk.usage_metadata:
+                    prompt_tokens = chunk.usage_metadata.get('input_tokens', 0)
+                    comp_tokens = chunk.usage_metadata.get('output_tokens', 0)
 
     except Exception as exc:
         yield f'（流式回复失败：{exc}）'

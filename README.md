@@ -58,7 +58,7 @@ Agent SoulMate is a full-stack AI companion workspace driven by local models (Ol
 | RAG knowledge | Per-character document retrieval (Milvus) injected into the system context |
 | Voice cloning | Upload a 10–30s `.wav` on My Characters; binds ElevenLabs `voice_id` for TTS replies |
 | VAD + barge-in | Energy-based browser VAD; WebSocket `vad_start` / `interrupt` cancels in-flight LLM + TTS for full-duplex talk-over |
-| Agent tools | Weather and news skills for grounded, actionable answers (keyword-triggered today) |
+| Agent tools | Weather and news skills invoked via LLM tool-calling (keyword fallback when disabled) |
 | Stats cache | Redis-backed dashboard aggregation with management warm commands |
 
 ## Tech stack
@@ -164,6 +164,10 @@ ELEVENLABS_API_KEY=
 ELEVENLABS_VOICE_ID=
 VOICE_CLONE_PROVIDER=elevenlabs
 
+# Agent multi-tool orchestration (set 0 to use legacy keyword triggers)
+AGENT_TOOL_ORCHESTRATION=1
+AGENT_TOOL_MAX_ROUNDS=3
+
 # Optional token usage log path (defaults under backend/data/)
 TOKEN_LOG_PATH=
 ```
@@ -212,7 +216,7 @@ CI and pre-commit hooks cover formatting, lint, and basic secret scanning. See `
 | Done | Dashboard stats with Redis cache |
 | Done | Voice cloning API integration (ElevenLabs + My Characters UI) |
 | Done | VAD + full-duplex barge-in (energy VAD, WS interrupt, TTS playback) |
-| Planned | Richer multi-tool agent orchestration (ReAct / tool-calling loop beyond keyword triggers) |
+| Done | Richer multi-tool agent orchestration (LLM tool-calling loop with keyword fallback) |
 
 ## License
 
