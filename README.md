@@ -31,7 +31,7 @@ Agent SoulMate is a full-stack AI companion workspace driven by local models (Ol
 | Account & access | Register / sign in; admins control create & publish permissions | Authenticated session with role-based gates |
 | Character design | Define persona, opening message, avatar, and optional RAG documents | A private or public companion character |
 | Plaza discovery | Browse published characters and start a conversation | A chat session bound to a character |
-| Streaming dialogue | Talk over WebSocket; LLM streams tokens with optional tools & RAG | Real-time companion replies |
+| Streaming dialogue | Talk over WebSocket; LLM streams tokens with optional tools, RAG, and voice | Real-time companion replies (text + optional TTS) |
 | Insight & ops | View dashboard analytics; warm Redis stats cache when needed | Usage insights for creators and admins |
 
 ## Product interface
@@ -57,7 +57,8 @@ Agent SoulMate is a full-stack AI companion workspace driven by local models (Ol
 | Real-time streaming | Django Channels + WebSocket for token-by-token replies |
 | RAG knowledge | Per-character document retrieval (Milvus) injected into the system context |
 | Voice cloning | Upload a 10–30s `.wav` on My Characters; binds ElevenLabs `voice_id` for TTS replies |
-| Agent tools | Weather and news skills for grounded, actionable answers |
+| VAD + barge-in | Energy-based browser VAD; WebSocket `vad_start` / `interrupt` cancels in-flight LLM + TTS for full-duplex talk-over |
+| Agent tools | Weather and news skills for grounded, actionable answers (keyword-triggered today) |
 | Stats cache | Redis-backed dashboard aggregation with management warm commands |
 
 ## Tech stack
@@ -158,6 +159,11 @@ REDIS_URL=redis://127.0.0.1:6380/0
 QWEATHER_API_KEY=
 TIANAPI_KEY=
 
+# Optional voice (ElevenLabs TTS + voice clone on My Characters)
+ELEVENLABS_API_KEY=
+ELEVENLABS_VOICE_ID=
+VOICE_CLONE_PROVIDER=elevenlabs
+
 # Optional token usage log path (defaults under backend/data/)
 TOKEN_LOG_PATH=
 ```
@@ -194,17 +200,19 @@ pre-commit install
 cd frontend && npm run build
 ```
 
-CI and pre-commit hooks cover formatting, lint, and basic secret scanning. See `.pre-commit-config.yaml` and `.gitlab-ci.yml`.
+CI and pre-commit hooks cover formatting, lint, and basic secret scanning. See `.pre-commit-config.yaml`, `.github/workflows/ci.yml`, and `.gitlab-ci.yml`.
 
 ## Roadmap
 
-- [x] Character create / publish / plaza
-- [x] Auth + admin permission controls
-- [x] Milvus RAG + agent tools (weather / news)
-- [x] Dashboard stats with Redis cache
-- [x] Voice cloning API integration (ElevenLabs + My Characters UI)
-- [x] VAD + full-duplex barge-in (energy VAD, WS interrupt, TTS playback)
-- [ ] Richer multi-tool agent orchestration
+| Status | Item |
+| --- | --- |
+| Done | Character create / publish / plaza |
+| Done | Auth + admin permission controls |
+| Done | Milvus RAG + agent tools (weather / news) |
+| Done | Dashboard stats with Redis cache |
+| Done | Voice cloning API integration (ElevenLabs + My Characters UI) |
+| Done | VAD + full-duplex barge-in (energy VAD, WS interrupt, TTS playback) |
+| Planned | Richer multi-tool agent orchestration (ReAct / tool-calling loop beyond keyword triggers) |
 
 ## License
 

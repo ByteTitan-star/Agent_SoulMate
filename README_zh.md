@@ -30,7 +30,7 @@ Agent SoulMate 是一个由本地模型（Ollama）驱动的全栈 AI 伴侣工�
 | 账号与权限 | 注册 / 登录；管理员控制创建与发布权限 | 带角色门禁的已认证会话 |
 | 角色设计 | 配置人设、开场白、头像，以及可选 RAG 文档 | 私有或公开的伴侣角色 |
 | 广场发现 | 浏览已发布角色并开始对话 | 绑定角色的聊天会话 |
-| 流式对话 | WebSocket 对话；LLM 流式输出，可叠加工具与 RAG | 实时伴侣回复 |
+| 流式对话 | WebSocket 对话；LLM 流式输出，可叠加工具、RAG 与语音 | 实时伴侣回复（文本 + 可选 TTS） |
 | 洞察与运维 | 查看数据看板；按需预热 Redis 统计缓存 | 创作者与管理员可用的用量洞察 |
 
 ## 产品界面
@@ -56,7 +56,8 @@ Agent SoulMate 是一个由本地模型（Ollama）驱动的全栈 AI 伴侣工�
 | 实时流式 | Django Channels + WebSocket，逐 token 输出 |
 | RAG 知识库 | 角色级文档检索（Milvus）注入系统上下文 |
 | 音色克隆 | 在「我的角色」上传 10–30 秒 `.wav`，绑定 ElevenLabs `voice_id` 用于 TTS 回复 |
-| Agent 工具 | 天气、资讯等技能，让回答更可落地 |
+| VAD + 全双工打断 | 浏览器能量 VAD；WebSocket `vad_start` / `interrupt` 取消进行中的 LLM 与 TTS，支持边说边打断 |
+| Agent 工具 | 天气、资讯等技能，让回答更可落地（当前为关键词触发） |
 | 统计缓存 | 基于 Redis 的看板聚合，附带预热管理命令 |
 
 ## 技术栈
@@ -157,6 +158,11 @@ REDIS_URL=redis://127.0.0.1:6380/0
 QWEATHER_API_KEY=
 TIANAPI_KEY=
 
+# 可选语音（ElevenLabs TTS +「我的角色」音色克隆）
+ELEVENLABS_API_KEY=
+ELEVENLABS_VOICE_ID=
+VOICE_CLONE_PROVIDER=elevenlabs
+
 # 可选 Token 用量日志路径（默认在 backend/data/ 下）
 TOKEN_LOG_PATH=
 ```
@@ -193,17 +199,19 @@ pre-commit install
 cd frontend && npm run build
 ```
 
-CI 与 pre-commit 覆盖格式化、Lint 与基础密钥扫描。详见 `.pre-commit-config.yaml` 与 `.gitlab-ci.yml`。
+CI 与 pre-commit 覆盖格式化、Lint 与基础密钥扫描。详见 `.pre-commit-config.yaml`、`.github/workflows/ci.yml` 与 `.gitlab-ci.yml`。
 
 ## 路线图
 
-- [x] 角色创建 / 发布 / 广场
-- [x] 鉴权 + 管理员权限控制
-- [x] Milvus RAG + Agent 工具（天气 / 资讯）
-- [x] 数据看板 + Redis 统计缓存
-- [x] Voice Cloning API 接入（ElevenLabs +「我的角色」上传）
-- [x] VAD + 全双工打断（能量 VAD、WS 打断、TTS 播放）
-- [ ] 更丰富的多工具 Agent 编排
+| 状态 | 事项 |
+| --- | --- |
+| 已完成 | 角色创建 / 发布 / 广场 |
+| 已完成 | 鉴权 + 管理员权限控制 |
+| 已完成 | Milvus RAG + Agent 工具（天气 / 资讯） |
+| 已完成 | 数据看板 + Redis 统计缓存 |
+| 已完成 | 音色克隆 API 接入（ElevenLabs +「我的角色」上传） |
+| 已完成 | VAD + 全双工打断（能量 VAD、WS 打断、TTS 播放） |
+| 规划中 | 更丰富的多工具 Agent 编排（ReAct / tool-calling 循环，替代关键词触发） |
 
 ## 许可证
 
