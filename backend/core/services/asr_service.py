@@ -38,7 +38,8 @@ def speech_to_text(audio_bytes: bytes, content_type: str = 'audio/wav') -> str:
         # whisper needs a file path; write a temp file then clean up
         import tempfile
 
-        with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as tmp:
+        suffix = '.wav' if audio_bytes[:4] == b'RIFF' else '.webm'
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
             tmp.write(audio_bytes)
             tmp.flush()
             tmp_path = tmp.name

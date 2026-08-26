@@ -17,6 +17,42 @@ export function useChat(characterId: string) {
   const reconnectAttemptRef = useRef(0);
   const reconnectTimerRef = useRef<number | null>(null);
   const characterIdRef = useRef(characterId);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+
+  const stopAudioPlayback = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+      audioRef.current = null;
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+  }, []);
+
+  const playBase64Audio = useCallback(
+    (b64: string, format: string) => {
+      stopAudioPlayback();
+      try {
+        const mime = format === 'wav' ? 'audio/wav' : 'audio/mpeg';
+        const binary = atob(b64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+        const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+        audioUrlRef.current = url;
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        void audio.play().catch(() => {
+          /* autoplay may be blocked until user gesture */
+        });
+      } catch {
+        // ignore decode/play errors
+      }
+    },
+    [stopAudioPlayback]
+  );
 
   useEffect(() => {
     characterIdRef.current = characterId;
@@ -119,7 +155,20 @@ export function useChat(characterId: string) {
               timestamp: data.timestamp || new Date().toISOString(),
             },
           ]);
+        } else if (data.type === 'asr_result') {
+          const text = (data.text || '').trim();
+          if (!text) return;
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `asr-${Date.now()}`,
+              role: 'user',
+              content: text,
+              timestamp: new Date().toISOString(),
+            },
+          ]);
         } else if (data.type === 'stream_start') {
+          stopAudioPlayback();
           setIsStreaming(true);
           const streamId = data.id || `t-${Date.now()}`;
           activeStreamIdRef.current = streamId;
@@ -143,6 +192,14 @@ export function useChat(characterId: string) {
         } else if (data.type === 'stream_end' || data.type === 'stream_cancelled') {
           setIsStreaming(false);
           activeStreamIdRef.current = null;
+        } else if (data.type === 'interrupted') {
+          stopAudioPlayback();
+          setIsStreaming(false);
+          activeStreamIdRef.current = null;
+        } else if (data.type === 'audio' && data.data) {
+          playBase64Audio(data.data, data.format || 'mp3');
+        } else if (data.type === 'tts_cancelled') {
+          stopAudioPlayback();
         } else if (data.type === 'error') {
           setIsStreaming(false);
           activeStreamIdRef.current = null;
@@ -152,11 +209,11 @@ export function useChat(characterId: string) {
       }
     };
     wsRef.current = ws;
-  }, [clearReconnectTimer]);
+  }, [clearReconnectTimer, playBase64Audio, stopAudioPlayback]);
 
   const sendMessage = useCallback(
     (text: string) => {
-      if (!text.trim() || isStreaming) return;
+      if (!text.trim()) return;
       const userMsg: Message = {
         id: `u-${Date.now()}`,
         role: 'user',
@@ -166,6 +223,7 @@ export function useChat(characterId: string) {
       setMessages((prev) => [...prev, userMsg]);
       setInput('');
 
+      // Barge-in: allow sending while streaming; backend cancels in-flight reply.
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({ type: 'message', content: text.trim() }));
         return;
@@ -245,8 +303,21 @@ export function useChat(characterId: string) {
           activeStreamIdRef.current = null;
         });
     },
-    [characterId, connect, isStreaming]
+    [characterId, connect]
   );
+
+  const sendJson = useCallback((payload: Record<string, unknown>) => {
+    if (wsRef.current?.readyState !== WebSocket.OPEN) return false;
+    wsRef.current.send(JSON.stringify(payload));
+    return true;
+  }, []);
+
+  const interrupt = useCallback(() => {
+    stopAudioPlayback();
+    sendJson({ type: 'interrupt' });
+    setIsStreaming(false);
+    activeStreamIdRef.current = null;
+  }, [sendJson, stopAudioPlayback]);
 
   const hydrateMessages = useCallback((history: Message[]) => {
     setMessages(history);
@@ -261,6 +332,8 @@ export function useChat(characterId: string) {
     input,
     setInput,
     sendMessage,
+    sendJson,
+    interrupt,
     isStreaming,
     connected,
     connect,

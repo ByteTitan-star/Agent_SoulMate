@@ -203,7 +203,7 @@ CI and pre-commit hooks cover formatting, lint, and basic secret scanning. See `
 - [x] Milvus RAG + agent tools (weather / news)
 - [x] Dashboard stats with Redis cache
 - [x] Voice cloning API integration (ElevenLabs + My Characters UI)
-- [ ] VAD + full-duplex barge-in
+- [x] VAD + full-duplex barge-in (energy VAD, WS interrupt, TTS playback)
 - [ ] Richer multi-tool agent orchestration
 
 ## License

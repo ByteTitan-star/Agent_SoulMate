@@ -17,6 +17,7 @@ import {
 import { charactersApi } from '@/api/characters';
 import { chatApi } from '@/api/chat';
 import { useChat } from '@/hooks/useChat';
+import { useVoiceBargeIn } from '@/hooks/useVoiceBargeIn';
 import { useAuth } from '@/context/AuthContext';
 import type { Character, Message } from '@/types';
 
@@ -58,6 +59,8 @@ export function ChatPage() {
     input,
     setInput,
     sendMessage,
+    sendJson,
+    interrupt,
     isStreaming,
     connected,
     connect,
@@ -68,6 +71,10 @@ export function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wasStreamingRef = useRef(false);
   const [voiceActive, setVoiceActive] = useState(false);
+  const { listening: voiceListening, speaking: voiceSpeaking, error: voiceError } = useVoiceBargeIn(
+    sendJson,
+    voiceActive && connected
+  );
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [uploadMsg, setUploadMsg] = useState('');
 
@@ -396,23 +403,44 @@ export function ChatPage() {
                   <button
                     type="button"
                     onClick={() => setVoiceActive((v) => !v)}
-                    className={`flex-shrink-0 rounded-xl p-3 transition-colors ${voiceActive ? 'bg-soul-rose text-white' : 'bg-soul-sand/50 text-soul-deep hover:bg-soul-sand'
-                      }`}
-                    title={voiceActive ? '结束语音' : '开始语音'}
+                    className={`flex-shrink-0 rounded-xl p-3 transition-colors ${
+                      voiceActive
+                        ? voiceSpeaking
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-soul-rose text-white'
+                        : 'bg-soul-sand/50 text-soul-deep hover:bg-soul-sand'
+                    }`}
+                    title={
+                      voiceActive
+                        ? voiceSpeaking
+                          ? '正在聆听…'
+                          : voiceListening
+                            ? '全双工语音已开启（开口可打断）'
+                            : '结束语音'
+                        : '开始全双工语音'
+                    }
                   >
                     {voiceActive ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
                   </button>
+                  {isStreaming && (
+                    <button
+                      type="button"
+                      onClick={() => interrupt()}
+                      className="flex-shrink-0 rounded-xl border border-soul-rose/40 bg-soul-rose/10 px-3 py-3 text-xs font-medium text-soul-rose hover:bg-soul-rose/20"
+                    >
+                      打断
+                    </button>
+                  )}
                   <input
                     type="text"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="输入消息..."
-                    disabled={isStreaming}
-                    className="flex-1 rounded-xl border border-soul-sand bg-white px-4 py-3 text-soul-ink placeholder:text-soul-deep/50 focus:outline-none focus:ring-2 focus:ring-soul-rose/30 disabled:opacity-60"
+                    placeholder={voiceActive ? '可说话或输入文字…' : '输入消息…'}
+                    className="flex-1 rounded-xl border border-soul-sand bg-white px-4 py-3 text-soul-ink placeholder:text-soul-deep/50 focus:outline-none focus:ring-2 focus:ring-soul-rose/30"
                   />
                   <button
                     type="submit"
-                    disabled={isStreaming || !input.trim()}
+                    disabled={!input.trim()}
                     className="flex-shrink-0 rounded-xl bg-soul-rose p-3 text-white transition-colors hover:bg-soul-terracotta disabled:opacity-50"
                   >
                     <Send className="h-5 w-5" />
@@ -423,6 +451,12 @@ export function ChatPage() {
           </div>
         </div>
       </div>
+
+      {voiceError && (
+        <div className="fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-xl border border-red-200 bg-white/95 px-4 py-2 text-sm text-red-600 shadow-lg">
+          {voiceError}
+        </div>
+      )}
 
       {feedback && (
         <div className="fixed bottom-6 left-1/2 z-[80] -translate-x-1/2 rounded-xl border border-soul-sand bg-white/95 px-4 py-2 text-sm text-soul-ink shadow-lg">
