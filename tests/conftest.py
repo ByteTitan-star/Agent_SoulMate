@@ -1,14 +1,10 @@
-"""Pytest bootstrap: configure Django before any test module imports it.
+"""Pytest bootstrap for Django.
 
-We configure Django manually (rather than via pytest-django) so the test suite
-stays dependency-light. ``pythonpath = ["backend"]`` (see pyproject.toml) makes
-``config``, ``core`` and ``skills`` importable.
+Prefer pytest-django's settings discovery via pyproject.toml
+(`DJANGO_SETTINGS_MODULE`). Keep this module as a lightweight fallback for
+local runs that still import Django early.
 """
 
 import os
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-
-import django
-
-django.setup()

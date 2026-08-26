@@ -217,7 +217,8 @@ class CharacterVoiceCloneView(APIView):
             description=description,
         )
         if not result.get('ok'):
-            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            detail = result.get('error') or result.get('detail') or '音色克隆失败'
+            return Response({'detail': detail, **result}, status=status.HTTP_400_BAD_REQUEST)
 
         character.voice_id = result['voice_id']
         character.save(update_fields=['voice_id'])

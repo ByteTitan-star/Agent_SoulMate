@@ -66,6 +66,7 @@ exclude = [
 minversion = "8.0"
 testpaths = ["tests"]
 pythonpath = ["backend"]
+DJANGO_SETTINGS_MODULE = "config.settings"
 addopts = ["-ra", "--strict-markers", "--strict-config"]
 filterwarnings = [
     "ignore::DeprecationWarning",
