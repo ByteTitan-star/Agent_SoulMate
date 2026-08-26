@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from core.services.tool_orchestrator import dispatch_tool_call, run_tool_orchestration
 
 
