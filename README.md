@@ -56,6 +56,7 @@ Agent SoulMate is a full-stack AI companion workspace driven by local models (Ol
 | Admin permissions | `is_admin` gates; toggle `can_create_character` / `can_publish_character` per user |
 | Real-time streaming | Django Channels + WebSocket for token-by-token replies |
 | RAG knowledge | Per-character document retrieval (Milvus) injected into the system context |
+| Voice cloning | Upload a 10–30s `.wav` on My Characters; binds ElevenLabs `voice_id` for TTS replies |
 | Agent tools | Weather and news skills for grounded, actionable answers |
 | Stats cache | Redis-backed dashboard aggregation with management warm commands |
 
@@ -201,7 +202,7 @@ CI and pre-commit hooks cover formatting, lint, and basic secret scanning. See `
 - [x] Auth + admin permission controls
 - [x] Milvus RAG + agent tools (weather / news)
 - [x] Dashboard stats with Redis cache
-- [ ] Voice cloning API integration
+- [x] Voice cloning API integration (ElevenLabs + My Characters UI)
 - [ ] VAD + full-duplex barge-in
 - [ ] Richer multi-tool agent orchestration
 

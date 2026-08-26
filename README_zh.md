@@ -55,6 +55,7 @@ Agent SoulMate 是一个由本地模型（Ollama）驱动的全栈 AI 伴侣工�
 | 管理员权限 | `is_admin` 门禁；可按用户开关 `can_create_character` / `can_publish_character` |
 | 实时流式 | Django Channels + WebSocket，逐 token 输出 |
 | RAG 知识库 | 角色级文档检索（Milvus）注入系统上下文 |
+| 音色克隆 | 在「我的角色」上传 10–30 秒 `.wav`，绑定 ElevenLabs `voice_id` 用于 TTS 回复 |
 | Agent 工具 | 天气、资讯等技能，让回答更可落地 |
 | 统计缓存 | 基于 Redis 的看板聚合，附带预热管理命令 |
 
@@ -200,7 +201,7 @@ CI 与 pre-commit 覆盖格式化、Lint 与基础密钥扫描。详见 `.pre-co
 - [x] 鉴权 + 管理员权限控制
 - [x] Milvus RAG + Agent 工具（天气 / 资讯）
 - [x] 数据看板 + Redis 统计缓存
-- [ ] Voice Cloning API 接入
+- [x] Voice Cloning API 接入（ElevenLabs +「我的角色」上传）
 - [ ] VAD + 全双工打断
 - [ ] 更丰富的多工具 Agent 编排
 
