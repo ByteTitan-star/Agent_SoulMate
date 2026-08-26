@@ -1,4 +1,4 @@
-# 💬 Agent SoulMate
+<h1 align="center">💬 Agent SoulMate</h1>
 
 <p align="center">
   <a href="https://github.com/ByteTitan-star/Agent_SoulMate/releases/tag/v1.0.0"><img src="https://img.shields.io/badge/Agent%20SoulMate-v1.0.0-14b8a6" alt="Agent SoulMate v1.0.0" /></a>
