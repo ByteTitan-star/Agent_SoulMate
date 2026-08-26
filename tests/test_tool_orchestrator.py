@@ -60,8 +60,8 @@ def test_run_tool_orchestration_executes_tool_then_returns_for_stream() -> None:
     updated, early = run_tool_orchestration(llm, messages, [_FakeTool()], max_rounds=3)
     assert early is None
     assert updated is not None
-    assert len(updated) == 4  # user + ai tool call + tool result + empty ai
-    assert llm.bound_tools == [_FakeTool()]
+    assert len(updated) == 3  # user + ai tool call + tool result (final stream pass follows)
+    assert [getattr(t, 'name', '') for t in (llm.bound_tools or [])] == ['demo_tool']
 
 
 def test_run_tool_orchestration_early_reply_without_stream() -> None:
@@ -80,8 +80,34 @@ def test_run_tool_orchestration_bind_failure_returns_none() -> None:
     assert early is None
 
 
+@patch('core.services.llm_service.run_tool_orchestration')
+def test_stream_chat_uses_orchestrator_early_reply(mock_orchestrate) -> None:
+    from core.services.llm_service import stream_chat
+
+    class _Char:
+        name = '测试'
+        system_prompt = '你是测试角色'
+        opening_message = ''
+        personality = []
+
+    mock_orchestrate.return_value = ([{'role': 'assistant', 'content': '北京今天晴。'}], '北京今天晴。')
+    llm = MagicMock()
+
+    tokens = list(
+        stream_chat(
+            _Char(),
+            'sess-1',
+            '北京天气怎么样',
+            chain_dict={'llm': llm, 'system': 'sys'},
+        )
+    )
+    assert tokens == ['北京今天晴。']
+    mock_orchestrate.assert_called_once()
+    llm.stream.assert_not_called()
+
+
 @patch('core.services.llm_service.run_tool_orchestration', return_value=(None, None))
-def test_stream_chat_falls_back_to_keyword_tools(mock_orchestrate) -> None:
+def test_stream_chat_falls_back_when_orchestrator_unavailable(mock_orchestrate) -> None:
     from core.services.llm_service import stream_chat
 
     class _Char:
