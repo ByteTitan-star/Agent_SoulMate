@@ -166,6 +166,8 @@ ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY', '')
 ELEVENLABS_VOICE_ID = os.environ.get('ELEVENLABS_VOICE_ID', '')
 VOICE_CLONE_PROVIDER = os.environ.get('VOICE_CLONE_PROVIDER', 'elevenlabs')
 TOOL_HTTP_TIMEOUT = float(os.environ.get('TOOL_HTTP_TIMEOUT', '8'))
+AGENT_TOOL_ORCHESTRATION = os.environ.get('AGENT_TOOL_ORCHESTRATION', '1').lower() in ('1', 'true', 'yes')
+AGENT_TOOL_MAX_ROUNDS = int(os.environ.get('AGENT_TOOL_MAX_ROUNDS', '3'))
 
 # Milvus for RAG
 MILVUS_URI = os.environ.get('MILVUS_URI', '')
