@@ -1,12 +1,13 @@
 # 身份验证视图。处理用户的注册、登录、登出以及 JWT Token（令牌）的获取和刷新等逻辑
-from django.contrib.auth import login, logout, authenticate, get_user_model
+from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.middleware.csrf import get_token
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
 from ..serializers import UserSerializer
 from ..services.default_characters import ensure_default_characters
 

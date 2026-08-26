@@ -1,8 +1,9 @@
 """洞察页统计结果 Redis/本地缓存。"""
+
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from django.conf import settings
 from django.core.cache import cache
@@ -23,7 +24,7 @@ def _want_refresh(request) -> bool:
     return raw in {'1', 'true', 'yes'}
 
 
-def cache_get(key: str) -> Optional[Any]:
+def cache_get(key: str) -> Any | None:
     try:
         return cache.get(key)
     except Exception as exc:

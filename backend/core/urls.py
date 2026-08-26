@@ -1,32 +1,43 @@
 # 路由入口
 
-from django.urls import path, include
+from django.urls import include, path
+
 from .views import (
-    AuthMeView, AuthLoginView, AuthRegisterView, AuthLogoutView,
-    CharacterListCreateView, CharacterMineView, CharacterDetailView,
-    ChatStreamView, ChatHistoryView, ChatHistoryItemView, DocumentUploadView, CharacterVoiceCloneView,
+    AuthLoginView,
+    AuthLogoutView,
+    AuthMeView,
+    AuthRegisterView,
+    CharacterDetailView,
+    CharacterListCreateView,
+    CharacterMineView,
+    CharacterVoiceCloneView,
+    ChatHistoryItemView,
+    ChatHistoryView,
+    ChatStreamView,
+    DocumentUploadView,
 )
+from .views.admin_views import AdminUserDetailView, AdminUserListView
 
 # 1. 引入你新建的 stats_views 里面的函数
 from .views.stats_views import get_chat_stats, get_topic_analysis
-from .views.admin_views import AdminUserListView, AdminUserDetailView
 
 urlpatterns = [
-    path('auth/', include([
-        path('me/', AuthMeView.as_view()),
-        path('login/', AuthLoginView.as_view()),
-        path('register/', AuthRegisterView.as_view()),
-        path('logout/', AuthLogoutView.as_view()),
-    ])),
-    
+    path(
+        'auth/',
+        include(
+            [
+                path('me/', AuthMeView.as_view()),
+                path('login/', AuthLoginView.as_view()),
+                path('register/', AuthRegisterView.as_view()),
+                path('logout/', AuthLogoutView.as_view()),
+            ]
+        ),
+    ),
     # === 数据洞察的 API 路由 ===
     path('stats/chat/', get_chat_stats),
     path('stats/analysis/', get_topic_analysis),
-
-
     path('admin/users/', AdminUserListView.as_view()),
     path('admin/users/<uuid:user_id>/', AdminUserDetailView.as_view()),
-
     path('characters/', CharacterListCreateView.as_view()),
     path('characters/mine/', CharacterMineView.as_view()),
     path('characters/<uuid:pk>/', CharacterDetailView.as_view()),

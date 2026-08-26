@@ -33,13 +33,13 @@ def api_client() -> APIClient:
 @pytest.fixture
 def owner(db):
     User = get_user_model()
-    return User.objects.create_user(username="owner", password="pass12345")
+    return User.objects.create_user(username="owner", password="pass12345")  # pragma: allow-secret
 
 
 @pytest.fixture
 def other_user(db):
     User = get_user_model()
-    return User.objects.create_user(username="other", password="pass12345")
+    return User.objects.create_user(username="other", password="pass12345")  # pragma: allow-secret
 
 
 @pytest.fixture

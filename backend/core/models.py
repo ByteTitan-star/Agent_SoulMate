@@ -1,8 +1,10 @@
 # 定义了数据库中的表结构
 import uuid
-from django.db import models
-from django.contrib.auth.models import AbstractUser
+
 from django.conf import settings
+from django.contrib.auth.models import AbstractUser
+from django.db import models
+
 
 # 角色头像上传路径：按角色 ID 分目录存储
 def character_avatar_path(instance, filename):
@@ -13,6 +15,7 @@ class User(AbstractUser):
     """
     自定义用户模型，继承 Django 的 AbstractUser
     """
+
     # 使用 UUID 作为主键，自动生成，不可编辑
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField('邮箱', blank=True)  # 邮箱字段，可为空
@@ -28,6 +31,7 @@ class Character(models.Model):
     """
     角色模型：代表一个 AI 角色，包含基本信息和设定
     """
+
     GENDER_CHOICES = [('male', '男'), ('female', '女'), ('other', '其他')]
 
     # UUID 主键
@@ -45,7 +49,7 @@ class Character(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='characters', null=True, blank=True
     )
     created_at = models.DateTimeField(auto_now_add=True)  # 创建时间
-    updated_at = models.DateTimeField(auto_now=True)      # 更新时间
+    updated_at = models.DateTimeField(auto_now=True)  # 更新时间
 
     class Meta:
         db_table = 'characters'  # 数据库表名
@@ -59,6 +63,7 @@ class ChatSession(models.Model):
     """
     对话会话：记录用户与某个角色的对话历史
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # UUID 主键
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='chat_sessions', null=True, blank=True
@@ -75,8 +80,9 @@ class Message(models.Model):
     """
     消息模型：会话中的单条消息
     """
-    ROLE_USER = 'user'          # 用户消息
-    ROLE_ASSISTANT = 'assistant' # AI 助手消息
+
+    ROLE_USER = 'user'  # 用户消息
+    ROLE_ASSISTANT = 'assistant'  # AI 助手消息
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # UUID 主键
     session = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='messages')  # 所属会话
@@ -93,6 +99,7 @@ class KnowledgeBase(models.Model):
     """
     知识库模型：与角色一对一关联，用于 RAG 检索
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # UUID 主键
     character = models.OneToOneField(Character, on_delete=models.CASCADE, related_name='knowledge_base')  # 所属角色
     created_at = models.DateTimeField(auto_now_add=True)  # 创建时间
@@ -105,6 +112,7 @@ class DocumentChunk(models.Model):
     """
     文档分块模型：存储上传文档的分块内容，向量存储在 Milvus 中
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)  # UUID 主键
     knowledge_base = models.ForeignKey(KnowledgeBase, on_delete=models.CASCADE, related_name='chunks')  # 所属知识库
     source_file = models.CharField('来源文件名', max_length=255)  # 原始文件名

@@ -4,17 +4,13 @@ from django.core.files.base import ContentFile
 
 from ..models import Character
 
-
 DEFAULT_CHARACTER_TEMPLATES = [
     {
         'key': 'weather',
         'name': '晴空天气官',
         'gender': 'other',
         'opening_message': '我是你的天气助手，告诉我城市即可。',
-        'system_prompt': (
-            '你是一个天气查询角色，语气清晰简洁。'
-            '当用户询问天气时，优先给出结论，再给出温度与出行建议。'
-        ),
+        'system_prompt': ('你是一个天气查询角色，语气清晰简洁。当用户询问天气时，优先给出结论，再给出温度与出行建议。'),
         'personality': ['系统角色', '工具代理', '天气'],
         'bg': '#7AA8FF',
         'emoji': '☀',
@@ -24,10 +20,7 @@ DEFAULT_CHARACTER_TEMPLATES = [
         'name': '今日资讯官',
         'gender': 'other',
         'opening_message': '我可以帮你速览热点与新闻。',
-        'system_prompt': (
-            '你是资讯检索角色。遇到新闻类提问时，先给要点摘要，再列出来源链接。'
-            '保持客观，避免杜撰。'
-        ),
+        'system_prompt': ('你是资讯检索角色。遇到新闻类提问时，先给要点摘要，再列出来源链接。保持客观，避免杜撰。'),
         'personality': ['系统角色', '工具代理', '资讯'],
         'bg': '#6FC7A8',
         'emoji': '📰',
@@ -37,10 +30,7 @@ DEFAULT_CHARACTER_TEMPLATES = [
         'name': '知识库馆长',
         'gender': 'other',
         'opening_message': '把文档交给我，我来帮你检索与归纳。',
-        'system_prompt': (
-            '你是知识库检索角色。优先基于上传文档回答，引用命中片段，'
-            '在信息不足时明确说明。'
-        ),
+        'system_prompt': ('你是知识库检索角色。优先基于上传文档回答，引用命中片段，在信息不足时明确说明。'),
         'personality': ['系统角色', '工具代理', '知识库'],
         'bg': '#C48DFF',
         'emoji': '📚',

@@ -1,11 +1,11 @@
 # 角色管理视图。处理与 AI 伴侣角色相关的 API 请求，比如获取角色列表、创建自定义角色、修改角色设定（Prompt）等
-from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.views import APIView
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
-from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.views import APIView
 
 from ..models import Character
 from ..serializers import CharacterSerializer
@@ -35,9 +35,7 @@ class CharacterListCreateView(APIView):
 
         if search:
             qs = qs.filter(
-                Q(name__icontains=search)
-                | Q(opening_message__icontains=search)
-                | Q(system_prompt__icontains=search)
+                Q(name__icontains=search) | Q(opening_message__icontains=search) | Q(system_prompt__icontains=search)
             )
         serializer = CharacterSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)
@@ -59,6 +57,7 @@ class CharacterListCreateView(APIView):
         }
         if isinstance(data['personality'], str):
             import json
+
             try:
                 data['personality'] = json.loads(data['personality']) if data['personality'] else []
             except json.JSONDecodeError:
@@ -115,6 +114,7 @@ class CharacterDetailView(APIView):
             if val is not None:
                 if key == 'personality' and isinstance(val, str):
                     import json
+
                     try:
                         val = json.loads(val) if val else []
                     except json.JSONDecodeError:

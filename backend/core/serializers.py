@@ -1,6 +1,7 @@
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Character, ChatSession, Message
+from rest_framework import serializers
+
+from .models import Character
 
 User = get_user_model()
 
@@ -21,7 +22,16 @@ class AdminUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'is_admin', 'can_create_character', 'can_publish_character', 'date_joined', 'character_count')
+        fields = (
+            'id',
+            'username',
+            'email',
+            'is_admin',
+            'can_create_character',
+            'can_publish_character',
+            'date_joined',
+            'character_count',
+        )
 
     def get_character_count(self, obj):
         return obj.characters.count()
@@ -38,8 +48,19 @@ class CharacterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Character
         fields = (
-            'id', 'name', 'gender', 'avatar_url', 'system_prompt', 'opening_message', 'personality',
-            'voice_id', 'is_public', 'creator_id', 'creator_name', 'created_at', 'updated_at'
+            'id',
+            'name',
+            'gender',
+            'avatar_url',
+            'system_prompt',
+            'opening_message',
+            'personality',
+            'voice_id',
+            'is_public',
+            'creator_id',
+            'creator_name',
+            'created_at',
+            'updated_at',
         )
         read_only_fields = ('id', 'created_at', 'updated_at')
 

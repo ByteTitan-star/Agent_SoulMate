@@ -159,7 +159,7 @@ def _scan_named_secrets(path: Path, line_number: int, line: str) -> list[Finding
         if path.suffix == ".py" and _is_python_variable_reference(raw_value):
             continue
         # In JS/TS, a bare identifier value is a type annotation (e.g.
-        # ``password: string``) or a variable reference — never a hardcoded
+        # ``passwdField: string``) or a variable reference — never a hardcoded
         # secret (those would be quoted string literals).
         if path.suffix in {".js", ".ts", ".jsx", ".tsx", ".vue"} and _is_js_identifier(value):
             continue
