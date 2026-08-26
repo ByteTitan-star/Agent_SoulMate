@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """生成家庭医生角色可上传的知识库 PDF。"""
+
 from pathlib import Path
 
 from reportlab.lib.pagesizes import A4
@@ -22,9 +22,9 @@ def main() -> None:
     styles.add(ParagraphStyle(name='CNH1', fontName='SimHei', fontSize=14, leading=22, spaceBefore=14, spaceAfter=8))
     styles.add(ParagraphStyle(name='CNH2', fontName='SimHei', fontSize=12, leading=20, spaceBefore=10, spaceAfter=6))
     styles.add(ParagraphStyle(name='CNBody', fontName='SimHei', fontSize=10.5, leading=18, spaceAfter=6))
-    styles.add(ParagraphStyle(
-        name='CNNote', fontName='SimHei', fontSize=9.5, leading=16, textColor='#444444', spaceAfter=8
-    ))
+    styles.add(
+        ParagraphStyle(name='CNNote', fontName='SimHei', fontSize=9.5, leading=16, textColor='#444444', spaceAfter=8)
+    )
 
     story = []
 
@@ -60,10 +60,7 @@ def main() -> None:
         '一侧肢体无力、口角歪斜、言语困难（疑似中风）。'
     )
     add('3.2 出血与外伤', 'CNH2')
-    add(
-        '无法止住的大出血；头部外伤后剧烈头痛、反复呕吐、嗜睡；严重烧伤；'
-        '可疑骨折伴肢体畸形或远端苍白冰凉。'
-    )
+    add('无法止住的大出血；头部外伤后剧烈头痛、反复呕吐、嗜睡；严重烧伤；可疑骨折伴肢体畸形或远端苍白冰凉。')
     add('3.3 过敏与感染', 'CNH2')
     add('全身风团伴喉头紧、喘鸣；高热伴颈强直、皮疹、精神萎靡；婴儿拒食、持续高热、抽搐。')
     add('3.4 精神心理危急', 'CNH2')
@@ -106,10 +103,7 @@ def main() -> None:
 
     add('六、就医沟通话术模板', 'CNH1')
     add('建议用户按以下结构向医生说明：')
-    add(
-        '“我主要是……（症状），从……开始，加重/缓解情况是……；伴随……；既往有……；'
-        '对……过敏；正在服用……；我最担心的是……。”'
-    )
+    add('“我主要是……（症状），从……开始，加重/缓解情况是……；伴随……；既往有……；对……过敏；正在服用……；我最担心的是……。”')
 
     add('七、角色回答示例边界', 'CNH1')
     add('正确：根据描述给出可能方向与观察建议，并列出何时就医。')

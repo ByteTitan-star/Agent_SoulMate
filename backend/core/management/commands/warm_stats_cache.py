@@ -5,6 +5,7 @@
   python manage.py warm_stats_cache --username admin
   python manage.py warm_stats_cache --username admin --ranges 30d,all,7d
 """
+
 from __future__ import annotations
 
 from django.conf import settings
@@ -157,7 +158,5 @@ class Command(BaseCommand):
             cache_set(analysis_cache_key(str(user.id), resolved), {'analysis': text}, analysis_ttl)
             points = len(chat_payload.get('chart_data') or [])
             self.stdout.write(
-                self.style.SUCCESS(
-                    f'warmed {username}/{resolved}: chart_points={points} analysis_chars={len(text)}'
-                )
+                self.style.SUCCESS(f'warmed {username}/{resolved}: chart_points={points} analysis_chars={len(text)}')
             )

@@ -178,6 +178,11 @@ export function MyCharactersPage() {
               setEditTarget(null);
               showToast('角色已更新', 'success');
             }}
+            onPatched={(updated) => {
+              setCharacters((list) => list.map((c) => (c.id === updated.id ? updated : c)));
+              setEditTarget(updated);
+              showToast('音色克隆成功', 'success');
+            }}
             onError={(msg) => showToast(msg, 'error')}
           />
         )}
@@ -253,7 +258,10 @@ function CharacterCard({
       <div className="p-3 flex-1 flex flex-col gap-2">
         <div>
           <p className="font-medium text-soul-ink truncate">{c.name}</p>
-          <p className="text-xs text-soul-deep/60">{GENDER_LABELS[c.gender] ?? c.gender}</p>
+          <p className="text-xs text-soul-deep/60">
+            {GENDER_LABELS[c.gender] ?? c.gender}
+            {c.voice_id ? ' · 已绑定音色' : ''}
+          </p>
         </div>
 
         {/* 操作按钮 */}
@@ -311,11 +319,13 @@ function EditModal({
   character,
   onClose,
   onSaved,
+  onPatched,
   onError,
 }: {
   character: Character;
   onClose: () => void;
   onSaved: (c: Character) => void;
+  onPatched: (c: Character) => void;
   onError: (msg: string) => void;
 }) {
   const [form, setForm] = useState<UpdateCharacterPayload>({
@@ -328,16 +338,38 @@ function EditModal({
   });
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [voiceId, setVoiceId] = useState<string | null>(character.voice_id);
+  const [cloning, setCloning] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       const updated = await charactersApi.update(character.id, form);
-      onSaved(updated);
+      onSaved({ ...updated, voice_id: voiceId });
     } catch (err) {
       onError(err instanceof Error ? err.message : '保存失败');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleVoiceClone = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.wav')) {
+      onError('仅支持 .wav 参考音频（建议 10~30 秒）');
+      return;
+    }
+    setCloning(true);
+    try {
+      const res = await charactersApi.cloneVoice(character.id, file, {
+        voice_name: `${form.name || character.name}-voice`,
+      });
+      setVoiceId(res.voice_id);
+      onPatched({ ...character, voice_id: res.voice_id });
+    } catch (err) {
+      onError(err instanceof Error ? err.message : '音色克隆失败');
+    } finally {
+      setCloning(false);
     }
   };
 
@@ -446,6 +478,31 @@ function EditModal({
                 添加
               </button>
             </div>
+          </Field>
+
+          <Field label="音色克隆（ElevenLabs）">
+            <p className="text-xs text-soul-deep/60 mb-2">
+              上传 10~30 秒的 .wav 参考音频。配置 <code className="text-soul-ink">ELEVENLABS_API_KEY</code> 后生效。
+            </p>
+            {voiceId ? (
+              <p className="text-xs text-emerald-600 mb-2">已绑定 voice_id：{voiceId}</p>
+            ) : (
+              <p className="text-xs text-soul-deep/50 mb-2">尚未绑定自定义音色</p>
+            )}
+            <label className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-soul-sand bg-soul-sand/30 text-sm text-soul-deep cursor-pointer hover:bg-soul-sand/50">
+              <input
+                type="file"
+                accept=".wav,audio/wav"
+                className="sr-only"
+                disabled={cloning}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  void handleVoiceClone(file);
+                  e.target.value = '';
+                }}
+              />
+              {cloning ? '克隆中…' : '上传参考音频并克隆'}
+            </label>
           </Field>
 
           <Field label="公开状态">

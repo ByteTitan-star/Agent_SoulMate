@@ -70,4 +70,24 @@ export const charactersApi = {
     });
   },
   delete: (id: string) => api.delete(`/characters/${id}/`),
+  cloneVoice: (
+    id: string,
+    file: File,
+    options?: { voice_name?: string; description?: string }
+  ): Promise<{ ok: boolean; voice_id: string; provider: string; character_id: string }> => {
+    const form = new FormData();
+    form.append('file', file);
+    if (options?.voice_name) form.append('voice_name', options.voice_name);
+    if (options?.description) form.append('description', options.description);
+    const csrfToken = getCsrfToken();
+    return fetch(`${import.meta.env.VITE_API_BASE ?? '/api'}/characters/${id}/voice-clone/`, {
+      method: 'POST',
+      body: form,
+      credentials: 'include',
+      headers: csrfToken ? { 'X-CSRFToken': csrfToken } : undefined,
+    }).then((r) => {
+      if (!r.ok) return parseApiError(r, '音色克隆失败');
+      return r.json();
+    });
+  },
 };

@@ -1,4 +1,5 @@
 """创建一批带 SVG 头像的演示角色（公开到广场）。"""
+
 from __future__ import annotations
 
 from django.contrib.auth import get_user_model
@@ -136,6 +137,4 @@ class Command(BaseCommand):
 
             self.stdout.write(self.style.SUCCESS(f'{action}: {char.name} ({char.id})'))
 
-        self.stdout.write(
-            self.style.SUCCESS(f'完成：新建 {created_n}，更新 {updated_n}，公开={is_public}')
-        )
+        self.stdout.write(self.style.SUCCESS(f'完成：新建 {created_n}，更新 {updated_n}，公开={is_public}'))

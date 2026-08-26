@@ -6,6 +6,7 @@
   python manage.py seed_demo_stats --username admin --total 2500 --days 180
   python manage.py seed_demo_stats --clear
 """
+
 from __future__ import annotations
 
 import random
@@ -93,9 +94,7 @@ class Command(BaseCommand):
         except User.DoesNotExist as exc:
             raise CommandError(f'用户不存在: {username}') from exc
 
-        characters = list(
-            Character.objects.filter(is_public=True).order_by('created_at')[:8]
-        )
+        characters = list(Character.objects.filter(is_public=True).order_by('created_at')[:8])
         if not characters:
             characters = list(Character.objects.order_by('created_at')[:8])
         if not characters:
@@ -181,9 +180,7 @@ class Command(BaseCommand):
             Message.objects.bulk_create(messages, batch_size=500)
 
         # bulk_create 对 auto_now_add 可能忽略传入值，二次校准时间
-        to_fix = list(
-            Message.objects.filter(session__user=user).order_by('id')
-        )
+        to_fix = list(Message.objects.filter(session__user=user).order_by('id'))
         # 若时间几乎全是“现在”，重新铺开
         if to_fix:
             sample = to_fix[:50]
