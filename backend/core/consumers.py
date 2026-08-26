@@ -8,19 +8,19 @@ WebSocket 聊天消费者（全双工 + 打断）：
 - 显式打断：
   - type=interrupt   -> 立即 cancel 当前任务
 """
-
 from __future__ import annotations
 
 import asyncio
 import base64
 import json
 import uuid
+from typing import Optional
 
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 from .models import Character, ChatSession, Message
-from .services import get_rag_retriever, speech_to_text, stream_chat, text_to_speech_bytes
+from .services import stream_chat, get_rag_retriever, speech_to_text, text_to_speech_bytes
 from .services.llm_service import build_chain
 
 _chat_chains = {}
@@ -34,14 +34,14 @@ def _next_or_end(iterator):
 class ChatConsumer(AsyncWebsocketConsumer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.character_id: str | None = None
-        self.character: Character | None = None
-        self.session_key: str | None = None
+        self.character_id: Optional[str] = None
+        self.character: Optional[Character] = None
+        self.session_key: Optional[str] = None
         self.user = None
-        self.chat_session: ChatSession | None = None
+        self.chat_session: Optional[ChatSession] = None
 
-        self.reply_task: asyncio.Task | None = None
-        self.tts_task: asyncio.Task | None = None
+        self.reply_task: Optional[asyncio.Task] = None
+        self.tts_task: Optional[asyncio.Task] = None
         self.audio_buffer = bytearray()
         self._task_lock = asyncio.Lock()
 
@@ -184,7 +184,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if not tts_bytes:
                 return
             b64 = base64.b64encode(tts_bytes).decode('ascii')
-            await self.send_json({'type': 'audio', 'stream_id': stream_id, 'data': b64, 'format': 'mp3'})
+            await self.send_json(
+                {'type': 'audio', 'stream_id': stream_id, 'data': b64, 'format': 'mp3'}
+            )
         except asyncio.CancelledError:
             await self.send_json({'type': 'tts_cancelled', 'stream_id': stream_id})
             raise
@@ -240,9 +242,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return None
 
         def _sync_get_or_create():
-            session = (
-                ChatSession.objects.filter(user=self.user, character=self.character).order_by('-created_at').first()
-            )
+            session = ChatSession.objects.filter(user=self.user, character=self.character).order_by('-created_at').first()
             if session:
                 return session
             return ChatSession.objects.create(user=self.user, character=self.character)

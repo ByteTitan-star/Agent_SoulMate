@@ -1,6 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom';
-// 1. 在顶部引入 BarChart2 图标
-import { Heart, LayoutGrid, LogIn, LogOut, UserPlus, BarChart2 } from 'lucide-react';
+import { Heart, LayoutGrid, LogIn, LogOut, UserPlus, BarChart2, Users, ShieldCheck } from 'lucide-react';
 import clsx from 'clsx';
 import { useAuth } from '@/context/AuthContext';
 
@@ -50,6 +49,32 @@ export function Layout() {
             ) : user ? (
               <>
                 <span className="text-sm text-soul-deep/80 px-2">你好，{user.username}</span>
+                <Link
+                  to="/my-characters"
+                  className={clsx(
+                    'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                    location.pathname === '/my-characters'
+                      ? 'bg-soul-rose/10 text-soul-rose'
+                      : 'text-soul-deep/80 hover:bg-soul-sand/60 hover:text-soul-deep'
+                  )}
+                >
+                  <Users className="w-4 h-4" />
+                  我的角色
+                </Link>
+                {user.is_admin && (
+                  <Link
+                    to="/admin"
+                    className={clsx(
+                      'flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                      location.pathname === '/admin'
+                        ? 'bg-soul-rose/10 text-soul-rose'
+                        : 'text-soul-deep/80 hover:bg-soul-sand/60 hover:text-soul-deep'
+                    )}
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    管理后台
+                  </Link>
+                )}
                 <button
                   type="button"
                   onClick={() => void logout()}
@@ -72,7 +97,7 @@ export function Layout() {
         </div>
       </header>
 
-      <main className="flex-1 min-h-0 overflow-hidden">
+      <main className="flex-1 min-h-0 overflow-y-auto">
         <Outlet />
       </main>
 

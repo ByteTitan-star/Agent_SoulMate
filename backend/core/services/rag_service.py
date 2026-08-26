@@ -1,23 +1,24 @@
 """
 RAG：文档入库（PDF/TXT）-> 切块 -> 本地 Milvus 向量库。
 """
-
 from __future__ import annotations
 
 import os
 import tempfile
-from typing import Any
+from typing import Optional, Dict, Any, List
 
 from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile
 
-from ..models import Character, DocumentChunk, KnowledgeBase
+from ..models import Character, KnowledgeBase, DocumentChunk
 
 try:
-    from langchain.text_splitter import RecursiveCharacterTextSplitter
     from langchain_community.document_loaders import PyPDFLoader, TextLoader
     from langchain_milvus import Milvus
-
+    try:
+        from langchain_text_splitters import RecursiveCharacterTextSplitter
+    except ImportError:
+        from langchain.text_splitter import RecursiveCharacterTextSplitter
     try:
         from langchain_community.embeddings import OllamaEmbeddings
     except ImportError:
@@ -28,7 +29,7 @@ except ImportError:
     RAG_AVAILABLE = False
 
 
-def _milvus_connection_args() -> dict[str, Any]:
+def _milvus_connection_args() -> Dict[str, Any]:
     """
     优先使用 MILVUS_URI；否则走 host/port。
     """
@@ -89,7 +90,7 @@ def get_rag_retriever(character, k: int = 4):
         return None
 
 
-def _load_file_content(upload: UploadedFile) -> list:
+def _load_file_content(upload: UploadedFile) -> List:
     """
     使用 LangChain Loader 解析 PDF/TXT。
     """

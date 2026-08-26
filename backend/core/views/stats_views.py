@@ -1,16 +1,21 @@
+# 数据统计视图。为前端的 Dashboard（控制台）提供数据支持，比如统计用户的 token 消耗量、聊天时长、创建的角色数量等分析数据
 from datetime import timedelta
+from typing import Optional
 
 from django.db.models import Count
 from django.db.models.functions import TruncDate, TruncMonth
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
-from langchain_core.messages import HumanMessage
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from langchain_core.messages import HumanMessage
+
 from ..models import Message
 from ..services.llm_service import _get_llm
+from ..services.stats_cache import get_or_compute_analysis, get_or_compute_chat
+
 
 PRESET_RANGE_DAYS = {
     'today': 1,
@@ -27,7 +32,7 @@ PRESET_RANGE_DAYS = {
 }
 
 
-def _parse_query_datetime(value: str | None, *, end_of_day: bool = False):
+def _parse_query_datetime(value: Optional[str], *, end_of_day: bool = False):
     """解析查询参数中的日期/时间，兼容 YYYY-MM-DD 与 ISO datetime。"""
     if not value:
         return None
@@ -56,11 +61,23 @@ def _resolve_time_window(request):
     now = timezone.now()
 
     # 优先使用预设范围
-    if range_key in PRESET_RANGE_DAYS:
+    if range_key in {'today', 'day'}:
+        # 「今天」应从本地日界线 00:00 起，而不是 now - 0 天（否则几乎筛不到数据）
+        local_now = timezone.localtime(now)
+        start_dt = local_now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_dt = now
+    elif range_key in PRESET_RANGE_DAYS:
         days = PRESET_RANGE_DAYS[range_key]
         if end_dt is None:
             end_dt = now
-        start_dt = end_dt - timedelta(days=days - 1)
+        # 覆盖完整自然日：往前 (days-1) 天的 00:00
+        local_end = timezone.localtime(end_dt)
+        end_day = local_end.replace(hour=23, minute=59, second=59, microsecond=999999)
+        start_day = (local_end - timedelta(days=days - 1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        start_dt = start_day
+        end_dt = min(end_day, now) if end_dt == now or end_dt is None else end_day
     elif range_key == 'all':
         # 全部数据允许不传时间
         pass
@@ -70,8 +87,11 @@ def _resolve_time_window(request):
     else:
         # 兜底默认近 30 天
         range_key = '30d'
+        local_now = timezone.localtime(now)
         end_dt = now
-        start_dt = end_dt - timedelta(days=29)
+        start_dt = (local_now - timedelta(days=29)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
 
     if start_dt and end_dt and start_dt > end_dt:
         return None, None, range_key, 'startDate 不能晚于 endDate'
@@ -98,15 +118,7 @@ def _build_range_label(range_key: str, start_dt, end_dt) -> str:
     return '最近一段时间'
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_chat_stats(request):
-    """互动频次统计：按时间范围聚合消息条数。"""
-    user = request.user
-    start_dt, end_dt, range_key, error = _resolve_time_window(request)
-    if error:
-        return Response({'detail': error}, status=400)
-
+def _compute_chat_stats(user, start_dt, end_dt, range_key):
     filters = {'session__user': user}
     if start_dt is not None:
         filters['created_at__gte'] = start_dt
@@ -115,7 +127,6 @@ def get_chat_stats(request):
 
     qs = Message.objects.filter(**filters)
 
-    # 时间跨度较大时，按月聚合避免图表过密
     if start_dt and end_dt:
         span_days = max((end_dt.date() - start_dt.date()).days + 1, 1)
     else:
@@ -123,7 +134,12 @@ def get_chat_stats(request):
     use_month_bucket = range_key in {'1y', 'year', 'all'} or span_days > 120
 
     bucket_expr = TruncMonth('created_at') if use_month_bucket else TruncDate('created_at')
-    rows = qs.annotate(bucket=bucket_expr).values('bucket').annotate(count=Count('id')).order_by('bucket')
+    rows = (
+        qs.annotate(bucket=bucket_expr)
+        .values('bucket')
+        .annotate(count=Count('id'))
+        .order_by('bucket')
+    )
 
     chart_data = []
     for item in rows:
@@ -137,29 +153,19 @@ def get_chat_stats(request):
             }
         )
 
-    return Response(
-        {
-            'chart_data': chart_data,
-            'meta': {
-                'range': range_key,
-                'label': _build_range_label(range_key, start_dt, end_dt),
-                'bucket': 'month' if use_month_bucket else 'day',
-                'startDate': start_dt.isoformat() if start_dt else None,
-                'endDate': end_dt.isoformat() if end_dt else None,
-            },
-        }
-    )
+    return {
+        'chart_data': chart_data,
+        'meta': {
+            'range': range_key,
+            'label': _build_range_label(range_key, start_dt, end_dt),
+            'bucket': 'month' if use_month_bucket else 'day',
+            'startDate': start_dt.isoformat() if start_dt else None,
+            'endDate': end_dt.isoformat() if end_dt else None,
+        },
+    }
 
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_topic_analysis(request):
-    """按时间范围提取用户消息并调用大模型做情绪/话题总结。"""
-    user = request.user
-    start_dt, end_dt, range_key, error = _resolve_time_window(request)
-    if error:
-        return Response({'detail': error}, status=400)
-
+def _compute_topic_analysis(user, start_dt, end_dt, range_key):
     filters = {
         'session__user': user,
         'role': Message.ROLE_USER,
@@ -171,17 +177,16 @@ def get_topic_analysis(request):
 
     recent_messages = Message.objects.filter(**filters).order_by('-created_at')[:120]
     if not recent_messages:
-        return Response({'analysis': '该时间范围内暂无足够聊天记录用于分析。'})
+        return {'analysis': '该时间范围内暂无足够聊天记录用于分析。'}
 
-    # 反转后按时间正序拼接，提高总结稳定性
     ordered_messages = list(reversed(list(recent_messages)))
     chat_texts = '\n'.join([m.content for m in ordered_messages if (m.content or '').strip()])
     if not chat_texts.strip():
-        return Response({'analysis': '该时间范围内暂无足够聊天记录用于分析。'})
+        return {'analysis': '该时间范围内暂无足够聊天记录用于分析。'}
 
     llm = _get_llm(streaming=False)
     if not llm:
-        return Response({'analysis': '分析服务暂不可用，请稍后重试。'})
+        return {'analysis': '分析服务暂不可用，请稍后重试。'}
 
     range_label = _build_range_label(range_key, start_dt, end_dt)
     prompt = (
@@ -202,6 +207,42 @@ def get_topic_analysis(request):
         analysis_text = (getattr(resp, 'content', '') or '').strip()
         if not analysis_text:
             analysis_text = '该时间范围内暂无可总结的稳定主题。'
-        return Response({'analysis': analysis_text})
+        return {'analysis': analysis_text}
     except Exception:
-        return Response({'analysis': '分析服务暂时繁忙，请稍后点击刷新重试。'})
+        return {'analysis': '分析服务暂时繁忙，请稍后点击刷新重试。'}
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_chat_stats(request):
+    """互动频次统计：按时间范围聚合消息条数（Redis 缓存）。"""
+    user = request.user
+    start_dt, end_dt, range_key, error = _resolve_time_window(request)
+    if error:
+        return Response({'detail': error}, status=400)
+
+    payload = get_or_compute_chat(
+        request,
+        user.id,
+        range_key,
+        lambda: _compute_chat_stats(user, start_dt, end_dt, range_key),
+    )
+    return Response(payload)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_topic_analysis(request):
+    """按时间范围提取用户消息并调用大模型做情绪/话题总结（Redis 缓存）。"""
+    user = request.user
+    start_dt, end_dt, range_key, error = _resolve_time_window(request)
+    if error:
+        return Response({'detail': error}, status=400)
+
+    payload = get_or_compute_analysis(
+        request,
+        user.id,
+        range_key,
+        lambda: _compute_topic_analysis(user, start_dt, end_dt, range_key),
+    )
+    return Response(payload)

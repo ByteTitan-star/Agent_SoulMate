@@ -7,6 +7,8 @@ import { CreateCharacterPage } from '@/pages/CreateCharacterPage';
 import { ChatPage } from '@/pages/ChatPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
+import { MyCharactersPage } from '@/pages/MyCharactersPage';
+import { AdminPanelPage } from '@/pages/AdminPanelPage';
 import { RequireAuth } from '@/components/RequireAuth';
 
 function App() {
@@ -20,6 +22,22 @@ function App() {
           <Route path="chat/:characterId" element={<ChatPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
+          <Route
+            path="my-characters"
+            element={
+              <RequireAuth>
+                <MyCharactersPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="admin"
+            element={
+              <RequireAuth>
+                <AdminPanelPage />
+              </RequireAuth>
+            }
+          />
           <Route
             path="dashboard"
             element={

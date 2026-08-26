@@ -53,6 +53,7 @@ Thumbs.db
 
 # --- Claude / local tooling ---
 .claude/
+.kiro/
 
 # --- CI caches ---
 .cache/

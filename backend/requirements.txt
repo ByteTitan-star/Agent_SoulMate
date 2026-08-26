@@ -9,6 +9,7 @@ Pillow>=10.0
 channels>=4.0
 channels-redis>=4.2
 daphne>=4.0
+redis>=5.0
 
 # Database
 psycopg2-binary>=2.9
@@ -19,6 +20,7 @@ langchain-openai>=0.0.5
 langchain-community>=0.0.20
 langchain-milvus>=0.1.7
 langchain-ollama>=0.1.0
+langchain-text-splitters>=0.2.0
 openai>=1.12
 
 # Embeddings & Vector

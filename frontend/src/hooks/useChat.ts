@@ -3,6 +3,8 @@ import type { Message } from '@/types';
 import { getCsrfToken } from '@/api/client';
 
 const WS_BASE = (import.meta.env.VITE_WS_BASE ?? '').replace(/^http/, 'ws') || `ws://${location.host}`;
+const RECONNECT_BASE_MS = 800;
+const RECONNECT_MAX_MS = 8000;
 
 export function useChat(characterId: string) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -11,6 +13,14 @@ export function useChat(characterId: string) {
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const activeStreamIdRef = useRef<string | null>(null);
+  const intentionalCloseRef = useRef(false);
+  const reconnectAttemptRef = useRef(0);
+  const reconnectTimerRef = useRef<number | null>(null);
+  const characterIdRef = useRef(characterId);
+
+  useEffect(() => {
+    characterIdRef.current = characterId;
+  }, [characterId]);
 
   useEffect(() => {
     // 切换角色时清空旧消息，避免跨角色串会话
@@ -20,11 +30,21 @@ export function useChat(characterId: string) {
     activeStreamIdRef.current = null;
   }, [characterId]);
 
+  const clearReconnectTimer = useCallback(() => {
+    if (reconnectTimerRef.current != null) {
+      window.clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+  }, []);
+
   const disconnect = useCallback(() => {
+    intentionalCloseRef.current = true;
+    clearReconnectTimer();
     const ws = wsRef.current;
     if (ws) {
       ws.onopen = null;
       ws.onclose = null;
+      ws.onerror = null;
       ws.onmessage = null;
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close();
@@ -32,8 +52,9 @@ export function useChat(characterId: string) {
     }
     wsRef.current = null;
     activeStreamIdRef.current = null;
+    setIsStreaming(false);
     setConnected(false);
-  }, []);
+  }, [clearReconnectTimer]);
 
   const connect = useCallback(() => {
     const current = wsRef.current;
@@ -41,15 +62,49 @@ export function useChat(characterId: string) {
       return;
     }
     if (current) {
-      disconnect();
+      current.onopen = null;
+      current.onclose = null;
+      current.onerror = null;
+      current.onmessage = null;
+      if (current.readyState === WebSocket.OPEN || current.readyState === WebSocket.CONNECTING) {
+        current.close();
+      }
+      wsRef.current = null;
     }
 
-    const ws = new WebSocket(`${WS_BASE}/ws/chat/${characterId}/`);
-    ws.onopen = () => setConnected(true);
+    intentionalCloseRef.current = false;
+    const targetId = characterIdRef.current;
+    if (!targetId) return;
+
+    const ws = new WebSocket(`${WS_BASE}/ws/chat/${targetId}/`);
+    ws.onopen = () => {
+      if (characterIdRef.current !== targetId) {
+        ws.close();
+        return;
+      }
+      reconnectAttemptRef.current = 0;
+      setConnected(true);
+    };
+    ws.onerror = () => {
+      // onclose 会继续处理重连
+    };
     ws.onclose = () => {
       if (wsRef.current === ws) wsRef.current = null;
       setConnected(false);
       activeStreamIdRef.current = null;
+      setIsStreaming(false);
+
+      if (intentionalCloseRef.current) return;
+      if (characterIdRef.current !== targetId) return;
+
+      const attempt = reconnectAttemptRef.current;
+      reconnectAttemptRef.current = attempt + 1;
+      const delay = Math.min(RECONNECT_BASE_MS * 2 ** attempt, RECONNECT_MAX_MS);
+      clearReconnectTimer();
+      reconnectTimerRef.current = window.setTimeout(() => {
+        if (characterIdRef.current !== targetId || intentionalCloseRef.current) return;
+        connect();
+      }, delay);
     };
     ws.onmessage = (event) => {
       try {
@@ -88,13 +143,16 @@ export function useChat(characterId: string) {
         } else if (data.type === 'stream_end' || data.type === 'stream_cancelled') {
           setIsStreaming(false);
           activeStreamIdRef.current = null;
+        } else if (data.type === 'error') {
+          setIsStreaming(false);
+          activeStreamIdRef.current = null;
         }
       } catch {
         // ignore non-JSON
       }
     };
     wsRef.current = ws;
-  }, [characterId, disconnect]);
+  }, [clearReconnectTimer]);
 
   const sendMessage = useCallback(
     (text: string) => {
@@ -113,7 +171,8 @@ export function useChat(characterId: string) {
         return;
       }
 
-      // fallback: REST SSE
+      // 未连接时先尝试重连，并走 REST SSE 兜底
+      connect();
       setIsStreaming(true);
       const apiBase = import.meta.env.VITE_API_BASE ?? '/api';
       const csrfToken = getCsrfToken();
@@ -186,7 +245,7 @@ export function useChat(characterId: string) {
           activeStreamIdRef.current = null;
         });
     },
-    [characterId, isStreaming]
+    [characterId, connect, isStreaming]
   );
 
   const hydrateMessages = useCallback((history: Message[]) => {

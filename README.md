@@ -1,70 +1,77 @@
-# AI SoulMate: A Local LLM-Driven UGC Soulmate Platform
+# AI Soulmate: 本地大模型驱动的 UGC 语音伴侣平台
 
-A scalable full-stack AI companion application that supports user-created/published characters (UGC), text and voice conversations, character knowledge bases, and tool usage.
+Python
+Django
+React
+Milvus
+Ollama
+License
 
-![Agent Voice Home Interface](./figures/Agent-SoulMate-home.png)
+![Agent Voice 首页界面](./figures/Agent-Voice-home.png)
 
+一个可扩展的全栈 AI 伴侣应用：支持用户创建/发布角色（UGC）、文本与语音对话、角色知识库、工具调用。
 
-## Core Features
+## 核心特性
 
-- **Local Model First**: Leverages `qwen2.5:14b` deployed locally via Ollama (OpenAI-compatible interface) to power conversation capabilities.
-- **Character UGC**: Create multiple characters, define personas, opening lines, avatars, voice tones, and publish them to a character square.
-- **Real-time Communication**: Django Channels + WebSocket support streaming conversations.
-- **RAG Capabilities**: Characters can be bound to private knowledge bases via Milvus vector database.
-- **Voice Pipeline**: ASR + TTS integration (planned).
+- 本地模型优先：通过 Ollama 本地部署 `qwen2.5:14b`（OpenAI 兼容接口）驱动对话能力。
+- 角色 UGC：创建多个角色、设定人设、开场白、头像、音色，并发布到角色广场。
+- 实时通信：Django Channels + WebSocket，支持流式对话。
+- RAG 能力：角色绑定私有知识库（后续迁移至 Milvus）。
+- 语音链路：ASR + TTS（后续扩展功能）。
 
-## Tech Stack
+## 技术栈
 
-- **Frontend**: React 18 + Vite + Tailwind CSS + Framer Motion
-- **Backend**: Django 4 + Django REST Framework + Channels
-- **LLM**: Ollama (`qwen2.5:14b`) + LangChain OpenAI-compatible client
-- **Vector Database**: Milvus (deployed locally via Docker Compose)
-- **Voice**: Whisper ASR + ElevenLabs/CosyVoice TTS
+- 前端：React 18 + Vite + Tailwind CSS + Framer Motion
+- 后端：Django 4 + Django REST Framework + Channels
+- LLM：Ollama（`qwen2.5:14b`）+ LangChain OpenAI 兼容客户端
+- 向量库：Milvus（Docker Compose 本地部署）
+- 语音：Whisper ASR + ElevenLabs/CosyVoice TTS
 
-## Architecture Diagram
+## 架构示意
 
 ```mermaid
 flowchart LR
-  A["React Web"] -->|HTTP/WS| B["Django + DRF + Channels"]
-  B -->|LLM Chat| C["Ollama API :11434"]
-  B -->|RAG Retrieve| D["Milvus :19530"]
-  B -->|ASR/TTS| E["Whisper / ElevenLabs"]
-  B --> F["PostgreSQL/SQLite"]
+  A[React Web] -->|HTTP/WS| B[Django + DRF + Channels]
+  B -->|LLM Chat| C[Ollama API :11434]
+  B -->|RAG Retrieve| D[Milvus :19530]
+  B -->|ASR/TTS| E[Whisper / ElevenLabs]
+  B --> F[(PostgreSQL/SQLite)]
 ```
 
 
-## Quick Start
 
-### 1) Start Milvus (Docker Compose)
+## 快速开始
 
-Run the following commands in the project root:
+### 1) 启动 Milvus（Docker Compose）
+
+在项目根目录执行：
 
 ```bash
 docker compose -p ai_voice up -d
 docker compose -p ai_voice ps
 
-# If creation fails, delete the existing container
+# 如果无法创建，那就删除
 docker rm milvus-etcd
 
-# If additional Redis is needed
+# 如果需要额外  添加redis
 docker run -d --name redis -p 6379:6379 redis:7-alpine
 ```
 
-Expected services:
+预期服务：
 
-- `etcd` (coordination metadata)
-- `minio`(object storage)
-- `milvus-standalone`（vector database)
+- `etcd`（协调元数据）
+- `minio`（对象存储）
+- `milvus-standalone`（向量数据库）
 
-Check health status:
+检查健康状态：
 
 ```bash
 curl http://localhost:9091/healthz
 ```
 
-A return of OK indicates Milvus is ready.
+返回 `OK` 表示 Milvus ready。
 
-### 2) Start Local Ollama + qwen2.5:14b
+### 2) 启动本地 Ollama + qwen2.5:14b
 
 ```bash
 ollama serve
@@ -72,13 +79,13 @@ ollama pull qwen2.5:14b
 ollama run qwen2.5:14b
 ```
 
-Verify the OpenAI-compatible interface:
+验证 OpenAI 兼容接口：
 
 ```bash
 curl http://127.0.0.1:11434/v1/models
 ```
 
-### 3) Start the Backend
+### 3) 启动后端
 
 ```bash
 cd backend
@@ -92,7 +99,7 @@ python manage.py migrate
 python manage.py runserver 0.0.0.0:8000
 ```
 
-### 4)  Start the Frontend
+### 4) 启动前端
 
 ```bash
 cd frontend
@@ -100,14 +107,14 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`。
+打开 `http://localhost:3000`。
 
-## Key Environment Variables (Backend)
+## 关键环境变量（后端）
 
-It is recommended to configure backend/.env as follows:
+建议在 `backend/.env` 配置：
 
 ```env
-# Ollama local OpenAI-compatible configuration
+# Ollama 本地 OpenAI 兼容配置
 OPENAI_BASE_URL=http://127.0.0.1:11434/v1
 OPENAI_API_KEY=ollama
 LLM_MODEL=qwen2.5:14b
@@ -121,77 +128,33 @@ MILVUS_DB_NAME=default
 CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ```
 
-## Project Structure
+## 项目结构
 
-```plaintext
+```text
 .
-├─ docker-compose.yml          # Milvus / Redis / etcd / MinIO
-├─ frontend/                   # React 18 + Vite + Tailwind
+├─ docker-compose.yml
+├─ frontend/
 │  └─ src/
 ├─ backend/
-│  ├─ config/                  # Django project (settings / urls / asgi / wsgi)
-│  ├─ core/                    # core Django app
-│  │  ├─ models.py
-│  │  ├─ views/                # auth / character / chat / stats
-│  │  ├─ services/             # llm / rag / asr / tts
-│  │  └─ consumers.py          # WebSocket streaming
-│  ├─ skills/                  # runtime skills live here (weather_skill, news_skill, …)
-│  ├─ manage.py
-│  └─ requirements.txt
+│  ├─ config/
+│  └─ core/
+│     ├─ models.py
+│     ├─ views/
+│     ├─ services/
+│     └─ consumers.py
 └─ README.md
 ```
 
-> Skills are loaded as a proper Python package (`from skills.weather_skill import ...`)
-> from `backend/skills/`, not from the repository root.
+## 路线图
 
-## Development & Code Quality
+- 角色创建/发布、角色广场
+- 登录鉴权（Session + CSRF）
+- 向量库已切换为 Milvus
+- Voice Cloning API 接入
+- VAD + 全双工打断
+- Agent Tools（天气/资讯）落地
 
-First-time setup (inside an activated venv):
+## 声明
 
-```bash
-pip install -r backend/requirements.txt -r requirements-dev.txt
-pre-commit install --hook-type pre-commit --hook-type commit-msg
-```
-
-Every commit then runs **ruff** (format + lint), **bandit** (security), a local
-**secret-scan**, **markdownlint**, and **conventional-commit** message checks.
-GitLab CI (`.gitlab-ci.yml`) mirrors these gates on every MR / push to `main`:
-`frontend_build` → `quality_static` / `quality_tests` / `quality_security` /
-`quality_markdown`. Vendored assets under `backend/skills/` are excluded from
-all scans.
-
-```bash
-pytest                          # tests (Django configured via tests/conftest.py)
-ruff check backend tests && ruff format --check backend tests
-bandit -q -ll -r backend/core backend/config -c pyproject.toml
-python scripts/secret_scan.py --all-files
-```
-
-> **Note on type checking:** mypy is intentionally omitted from the enforced
-> gate — the legacy Django + LangChain code is not yet typed. A `[tool.mypy]`
-> config is kept in `pyproject.toml` for gradual, module-by-module adoption.
-
-### Token usage log
-
-The LLM token-usage log path is configurable via `TOKEN_LOG_PATH` (see
-`backend/.env.example`). It defaults to a project-local file
-(`backend/data/token_usage.md`); set it to a shared path to keep cross-project
-aggregation.
-
-## Roadmap
-
-- Character creation/publishing, character square
-- Login authentication (Session + CSRF)
-- Vector database migrated to Milvus
-- Voice Cloning API integration
-- VAD + full-duplex interruption
-- Agent Tools (weather/news) implementation
-
-## Disclaimer
-
-This project uses local models by default and does not rely on remote OpenAI
-official LLM APIs.
-
+本项目默认使用本地模型，不依赖远端LLM OpenAI 官方接口。
 ---
-
-*Developed by ByteTitan-star*

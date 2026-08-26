@@ -1,7 +1,6 @@
-from django.contrib.auth import get_user_model
 from rest_framework import serializers
-
-from .models import Character
+from django.contrib.auth import get_user_model
+from .models import Character, ChatSession, Message
 
 User = get_user_model()
 
@@ -11,10 +10,21 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email')
+        fields = ('id', 'username', 'email', 'is_admin', 'can_create_character', 'can_publish_character')
 
     def get_id(self, obj):
         return str(obj.pk)
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    character_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'is_admin', 'can_create_character', 'can_publish_character', 'date_joined', 'character_count')
+
+    def get_character_count(self, obj):
+        return obj.characters.count()
 
 
 class CharacterSerializer(serializers.ModelSerializer):
@@ -28,19 +38,8 @@ class CharacterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Character
         fields = (
-            'id',
-            'name',
-            'gender',
-            'avatar_url',
-            'system_prompt',
-            'opening_message',
-            'personality',
-            'voice_id',
-            'is_public',
-            'creator_id',
-            'creator_name',
-            'created_at',
-            'updated_at',
+            'id', 'name', 'gender', 'avatar_url', 'system_prompt', 'opening_message', 'personality',
+            'voice_id', 'is_public', 'creator_id', 'creator_name', 'created_at', 'updated_at'
         )
         read_only_fields = ('id', 'created_at', 'updated_at')
 

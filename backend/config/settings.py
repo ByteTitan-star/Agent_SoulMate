@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -60,7 +59,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': os.environ.get('PG_DATABASE', 'ai_soulmate'),
         'USER': os.environ.get('PG_USER', 'postgres'),
-        'PASSWORD': os.environ.get('PG_PASSWORD', ''),
+        'PASSWORD': os.environ.get('PG_PASSWORD', 'admin223223'),
         'HOST': os.environ.get('PG_HOST', '127.0.0.1'),
         'PORT': os.environ.get('PG_PORT', '5432'),
     }
@@ -107,18 +106,47 @@ REST_FRAMEWORK = {
     ],
 }
 
+# 聊天 Consumer 不依赖 group_send；本地单进程用内存层更稳。
+# Redis 仅用于业务缓存（见下方 CACHES）。多机部署时可设 CHANNEL_LAYER_REDIS=1。
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
     }
 }
-if os.environ.get('REDIS_URL'):
+REDIS_URL = os.environ.get('REDIS_URL', '').strip()
+if REDIS_URL and os.environ.get('CHANNEL_LAYER_REDIS', '').strip() in {'1', 'true', 'yes'}:
     CHANNEL_LAYERS['default'] = {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {'hosts': [os.environ['REDIS_URL']]},
+        'CONFIG': {
+            'hosts': [REDIS_URL],
+            'expiry': 60,
+            'capacity': 1000,
+        },
     }
 
+# 洞察页等业务缓存：优先 Redis，不可用时回退本地内存
+if REDIS_URL:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'KEY_PREFIX': 'soulmate',
+            'TIMEOUT': 300,
+        }
+    }
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'soulmate-local',
+        }
+    }
+
+STATS_CHAT_CACHE_TTL = int(os.environ.get('STATS_CHAT_CACHE_TTL', '300'))  # 5 分钟
+STATS_ANALYSIS_CACHE_TTL = int(os.environ.get('STATS_ANALYSIS_CACHE_TTL', '1800'))  # 30 分钟
+
 # LangChain / LLM
+# 本地部署
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', 'ollama')
 OPENAI_BASE_URL = os.environ.get('OPENAI_BASE_URL', 'http://127.0.0.1:11434/v1')
 LLM_MODEL = os.environ.get('LLM_MODEL', 'qwen2.5:14b')
@@ -126,11 +154,13 @@ OLLAMA_BASE_URL = os.environ.get('OLLAMA_BASE_URL', 'http://127.0.0.1:11434')
 OLLAMA_EMBED_MODEL = os.environ.get('OLLAMA_EMBED_MODEL', 'nomic-embed-text')
 
 # ASR
+# 语音识别模型
 WHISPER_MODEL = os.environ.get('WHISPER_MODEL', 'base')  # or tiny, small, medium, large
 ASR_OPENAI_API_KEY = os.environ.get('ASR_OPENAI_API_KEY', '')
 ASR_OPENAI_BASE_URL = os.environ.get('ASR_OPENAI_BASE_URL', '')
 
 # TTS (e.g. ElevenLabs)
+# 语音转文字
 ELEVENLABS_API_KEY = os.environ.get('ELEVENLABS_API_KEY', '')
 ELEVENLABS_VOICE_ID = os.environ.get('ELEVENLABS_VOICE_ID', '')
 VOICE_CLONE_PROVIDER = os.environ.get('VOICE_CLONE_PROVIDER', 'elevenlabs')

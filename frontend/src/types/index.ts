@@ -25,6 +25,9 @@ export interface User {
   id: string;
   username: string;
   email?: string;
+  is_admin: boolean;
+  can_create_character: boolean;
+  can_publish_character: boolean;
 }
 
 export interface ChatSession {
