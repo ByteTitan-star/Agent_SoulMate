@@ -92,8 +92,9 @@ export function DashboardPage() {
   const rangeLabel = useMemo(() => getRangeLabel(selectedRange), [selectedRange]);
   const isRefreshing = chartLoading || summaryLoading;
 
-  const loadDashboardData = useCallback(async () => {
+  const loadDashboardData = useCallback(async (opts?: { refresh?: boolean }) => {
     const requestId = ++requestIdRef.current;
+    const refresh = Boolean(opts?.refresh);
 
     if (!loadedOnceRef.current) {
       setPageLoading(true);
@@ -104,38 +105,46 @@ export function DashboardPage() {
     setChartError(null);
     setSummaryError(null);
 
-    console.log('[Dashboard] range=', selectedRange);
+    console.log('[Dashboard] range=', selectedRange, 'refresh=', refresh);
 
-    const [interactionResult, summaryResult] = await Promise.allSettled([
-      statsApi.getInteractionStats({ range: selectedRange }),
-      statsApi.getEmotionTopicSummary({ range: selectedRange }),
-    ]);
+    const chartPromise = statsApi
+      .getInteractionStats({ range: selectedRange, refresh })
+      .then((value) => {
+        if (requestId !== requestIdRef.current) return;
+        console.log('[Dashboard] interaction response=', value);
+        setRawChartData(Array.isArray(value.chart_data) ? value.chart_data : []);
+        setChartLoading(false);
+        setPageLoading(false);
+        loadedOnceRef.current = true;
+      })
+      .catch((reason) => {
+        if (requestId !== requestIdRef.current) return;
+        console.error('[Dashboard] interaction error=', reason);
+        setRawChartData([]);
+        setChartError(reason instanceof Error ? reason.message : '互动数据加载失败');
+        setChartLoading(false);
+        setPageLoading(false);
+        loadedOnceRef.current = true;
+      });
 
-    if (requestId !== requestIdRef.current) return;
+    const summaryPromise = statsApi
+      .getEmotionTopicSummary({ range: selectedRange, refresh })
+      .then((value) => {
+        if (requestId !== requestIdRef.current) return;
+        console.log('[Dashboard] summary response=', value);
+        const text = (value.analysis ?? '').trim();
+        setAnalysis(text || '该时间范围内暂无足够聊天记录用于分析。');
+        setSummaryLoading(false);
+      })
+      .catch((reason) => {
+        if (requestId !== requestIdRef.current) return;
+        console.error('[Dashboard] summary error=', reason);
+        setAnalysis('');
+        setSummaryError(reason instanceof Error ? reason.message : '情绪与话题总结加载失败');
+        setSummaryLoading(false);
+      });
 
-    if (interactionResult.status === 'fulfilled') {
-      console.log('[Dashboard] interaction response=', interactionResult.value);
-      setRawChartData(Array.isArray(interactionResult.value.chart_data) ? interactionResult.value.chart_data : []);
-    } else {
-      console.error('[Dashboard] interaction error=', interactionResult.reason);
-      setRawChartData([]);
-      setChartError(interactionResult.reason instanceof Error ? interactionResult.reason.message : '互动数据加载失败');
-    }
-
-    if (summaryResult.status === 'fulfilled') {
-      console.log('[Dashboard] summary response=', summaryResult.value);
-      const text = (summaryResult.value.analysis ?? '').trim();
-      setAnalysis(text || '该时间范围内暂无足够聊天记录用于分析。');
-    } else {
-      console.error('[Dashboard] summary error=', summaryResult.reason);
-      setAnalysis('');
-      setSummaryError(summaryResult.reason instanceof Error ? summaryResult.reason.message : '情绪与话题总结加载失败');
-    }
-
-    setChartLoading(false);
-    setSummaryLoading(false);
-    setPageLoading(false);
-    loadedOnceRef.current = true;
+    await Promise.allSettled([chartPromise, summaryPromise]);
   }, [selectedRange]);
 
   useEffect(() => {
@@ -149,7 +158,7 @@ export function DashboardPage() {
   }, [loadDashboardData]);
 
   const handleRefresh = useCallback(() => {
-    void loadDashboardData();
+    void loadDashboardData({ refresh: true });
   }, [loadDashboardData]);
 
   if (pageLoading && chartData.length === 0 && !analysis) {

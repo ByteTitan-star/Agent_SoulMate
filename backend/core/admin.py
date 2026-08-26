@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-
-from .models import Character, ChatSession, DocumentChunk, KnowledgeBase, Message, User
+from .models import User, Character, ChatSession, Message, KnowledgeBase, DocumentChunk
 
 
 @admin.register(User)
@@ -28,7 +27,6 @@ class MessageAdmin(admin.ModelAdmin):
 
     def content_preview(self, obj):
         return (obj.content or '')[:50] + '...' if len(obj.content or '') > 50 else (obj.content or '')
-
     content_preview.short_description = '内容'
 
 

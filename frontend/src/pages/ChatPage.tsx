@@ -11,6 +11,7 @@ import {
   MicOff,
   Send,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react';
 import { charactersApi } from '@/api/characters';
@@ -18,6 +19,8 @@ import { chatApi } from '@/api/chat';
 import { useChat } from '@/hooks/useChat';
 import { useAuth } from '@/context/AuthContext';
 import type { Character, Message } from '@/types';
+
+type UploadState = 'idle' | 'uploading' | 'done' | 'error';
 
 const DEFAULT_TOOL_ROLE_NAMES = new Set(['晴空天气官', '今日资讯官', '知识库馆长']);
 
@@ -65,6 +68,8 @@ export function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const wasStreamingRef = useRef(false);
   const [voiceActive, setVoiceActive] = useState(false);
+  const [uploadState, setUploadState] = useState<UploadState>('idle');
+  const [uploadMsg, setUploadMsg] = useState('');
 
   const loadHistory = useCallback(
     async (withLoading: boolean) => {
@@ -257,9 +262,56 @@ export function ChatPage() {
                   </div>
                 )}
               </div>
-            </aside>
 
-            {/* <section className="xl:col-span-9"> */}
+              {/* 上传私有知识文件 */}
+              <div className="rounded-2xl border border-soul-sand/70 bg-white/85 p-4 shadow-[0_10px_24px_rgba(0,0,0,0.04)]">
+                <div className="mb-3 flex items-center gap-2">
+                  <Upload className="h-4 w-4 text-soul-sage" />
+                  <h3 className="text-sm font-semibold text-soul-ink">上传私有知识文件</h3>
+                </div>
+                <p className="text-xs text-soul-deep/60 mb-3">支持 PDF / TXT，角色将优先检索知识库内容回答。</p>
+                <label className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-3 py-5 cursor-pointer transition-colors ${
+                  uploadState === 'uploading'
+                    ? 'border-soul-sand bg-soul-sand/20 cursor-not-allowed'
+                    : 'border-soul-sand/70 hover:border-soul-rose/50 hover:bg-soul-rose/5'
+                }`}>
+                  {uploadState === 'uploading' ? (
+                    <div className="w-5 h-5 rounded-full border-2 border-soul-rose border-t-transparent animate-spin" />
+                  ) : (
+                    <Upload className="h-5 w-5 text-soul-deep/40" />
+                  )}
+                  <span className="text-xs text-soul-deep/60">
+                    {uploadState === 'uploading' ? '上传中…' : '点击选择文件'}
+                  </span>
+                  <input
+                    type="file"
+                    accept=".pdf,.txt"
+                    className="hidden"
+                    disabled={uploadState === 'uploading'}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      if (!file || !characterId) return;
+                      setUploadState('uploading');
+                      setUploadMsg('');
+                      try {
+                        const res = await chatApi.uploadDocument(characterId, file);
+                        setUploadState('done');
+                        setUploadMsg(`已入库 ${res.chunks ?? 0} 个片段`);
+                      } catch (err) {
+                        setUploadState('error');
+                        setUploadMsg(err instanceof Error ? err.message : '上传失败');
+                      }
+                    }}
+                  />
+                </label>
+                {uploadMsg && (
+                  <p className={`mt-2 text-xs text-center ${uploadState === 'error' ? 'text-red-500' : 'text-emerald-600'}`}>
+                    {uploadMsg}
+                  </p>
+                )}
+              </div>
+            </aside>
             <section className="xl:col-span-9 flex flex-col min-h-0 h-full">
               <div className="mx-auto flex flex-1 min-h-0 w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-soul-sand/70 bg-white/90 shadow-[0_16px_40px_rgba(28,25,23,0.08)]">
                 <motion.header

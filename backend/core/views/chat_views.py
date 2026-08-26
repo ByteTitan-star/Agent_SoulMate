@@ -1,3 +1,4 @@
+# 聊天记录视图。处理普通文本聊天的历史记录拉取、创建新聊天会话等 HTTP 请求
 import io
 import json
 import uuid
@@ -6,13 +7,13 @@ import wave
 from django.http import StreamingHttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from ..models import Character, ChatSession, Message
-from ..services import clone_voice_from_wav, get_rag_retriever, ingest_document, stream_chat
+from ..services import stream_chat, get_rag_retriever, ingest_document, clone_voice_from_wav
 from ..services.llm_service import build_chain
 
 # 内存中按 session 存 chain，生产建议用 Redis。
@@ -80,7 +81,9 @@ class ChatStreamView(APIView):
 
     def post(self, request, character_id):
         character = get_object_or_404(Character, pk=character_id)
-        if not character.is_public and (not request.user.is_authenticated or character.creator_id != request.user.id):
+        if not character.is_public and (
+            not request.user.is_authenticated or character.creator_id != request.user.id
+        ):
             return Response({'detail': '无权与该角色对话'}, status=status.HTTP_403_FORBIDDEN)
 
         body = request.data or {}
@@ -203,9 +206,7 @@ class CharacterVoiceCloneView(APIView):
         if duration <= 0:
             return Response({'detail': '无法识别 wav 音频时长，请检查文件格式'}, status=status.HTTP_400_BAD_REQUEST)
         if duration < 10 or duration > 30:
-            return Response(
-                {'detail': f'参考音频需 10~30 秒，当前约 {duration:.1f} 秒'}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({'detail': f'参考音频需 10~30 秒，当前约 {duration:.1f} 秒'}, status=status.HTTP_400_BAD_REQUEST)
 
         voice_name = (request.data.get('voice_name') or f'{character.name}-{request.user.username}').strip()
         description = (request.data.get('description') or '').strip()

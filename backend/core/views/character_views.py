@@ -1,10 +1,11 @@
-from django.db.models import Q
+# 角色管理视图。处理与 AI 伴侣角色相关的 API 请求，比如获取角色列表、创建自定义角色、修改角色设定（Prompt）等
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from rest_framework import status
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 
 from ..models import Character
 from ..serializers import CharacterSerializer
@@ -34,7 +35,9 @@ class CharacterListCreateView(APIView):
 
         if search:
             qs = qs.filter(
-                Q(name__icontains=search) | Q(opening_message__icontains=search) | Q(system_prompt__icontains=search)
+                Q(name__icontains=search)
+                | Q(opening_message__icontains=search)
+                | Q(system_prompt__icontains=search)
             )
         serializer = CharacterSerializer(qs, many=True, context={'request': request})
         return Response(serializer.data)
@@ -42,6 +45,8 @@ class CharacterListCreateView(APIView):
     def post(self, request):
         if not request.user.is_authenticated:
             return Response({'detail': '请先登录'}, status=status.HTTP_403_FORBIDDEN)
+        if not request.user.can_create_character:
+            return Response({'detail': '您没有创建角色的权限'}, status=status.HTTP_403_FORBIDDEN)
         is_public_raw = request.data.get('is_public', request.POST.get('is_public', False))
         data = {
             'name': request.data.get('name') or request.POST.get('name'),
@@ -54,11 +59,14 @@ class CharacterListCreateView(APIView):
         }
         if isinstance(data['personality'], str):
             import json
-
             try:
                 data['personality'] = json.loads(data['personality']) if data['personality'] else []
             except json.JSONDecodeError:
                 data['personality'] = [p.strip() for p in (data['personality'] or '').split(',') if p.strip()]
+        publish_blocked = False
+        if data['is_public'] and not request.user.can_publish_character:
+            data['is_public'] = False
+            publish_blocked = True
         serializer = CharacterSerializer(data=data, context={'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -66,7 +74,11 @@ class CharacterListCreateView(APIView):
         if request.FILES.get('avatar'):
             char.avatar = request.FILES['avatar']
             char.save(update_fields=['avatar'])
-        return Response(CharacterSerializer(char, context={'request': request}).data, status=status.HTTP_201_CREATED)
+        response_data = CharacterSerializer(char, context={'request': request}).data
+        if publish_blocked:
+            response_data = dict(response_data)
+            response_data['publish_blocked'] = True
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 class CharacterMineView(APIView):
@@ -92,13 +104,17 @@ class CharacterDetailView(APIView):
         char = get_object_or_404(Character, pk=pk)
         if not request.user.is_authenticated or char.creator_id != request.user.id:
             return Response({'detail': '无权修改'}, status=status.HTTP_403_FORBIDDEN)
+        # 检查是否尝试将 is_public 改为 True
+        new_is_public = request.data.get('is_public') if 'is_public' in request.data else request.POST.get('is_public')
+        if new_is_public is not None:
+            if _to_bool(new_is_public) and not request.user.can_publish_character:
+                return Response({'detail': '您没有发布角色的权限'}, status=status.HTTP_403_FORBIDDEN)
         for key in ('name', 'gender', 'system_prompt', 'opening_message', 'personality', 'voice_id', 'is_public'):
             has_key = key in request.data
             val = request.data.get(key) if has_key else request.POST.get(key)
             if val is not None:
                 if key == 'personality' and isinstance(val, str):
                     import json
-
                     try:
                         val = json.loads(val) if val else []
                     except json.JSONDecodeError:

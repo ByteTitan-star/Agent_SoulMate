@@ -4,6 +4,8 @@ export type StatsRange = 'today' | '7d' | '30d' | '90d' | '1y' | 'all';
 
 export interface StatsQueryParams {
   range: StatsRange;
+  /** 为 true 时绕过服务端 Redis 缓存强制重算 */
+  refresh?: boolean;
 }
 
 export interface InteractionStatsItem {
@@ -29,6 +31,9 @@ export interface EmotionTopicSummaryResponse {
 function buildStatsQuery(params: StatsQueryParams): string {
   const query = new URLSearchParams();
   query.set('range', params.range);
+  if (params.refresh) {
+    query.set('refresh', '1');
+  }
   return `?${query.toString()}`;
 }
 
