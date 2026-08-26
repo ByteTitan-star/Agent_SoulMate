@@ -202,7 +202,7 @@ CI 与 pre-commit 覆盖格式化、Lint 与基础密钥扫描。详见 `.pre-co
 - [x] Milvus RAG + Agent 工具（天气 / 资讯）
 - [x] 数据看板 + Redis 统计缓存
 - [x] Voice Cloning API 接入（ElevenLabs +「我的角色」上传）
-- [ ] VAD + 全双工打断
+- [x] VAD + 全双工打断（能量 VAD、WS 打断、TTS 播放）
 - [ ] 更丰富的多工具 Agent 编排
 
 ## 许可证
