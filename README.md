@@ -1,7 +1,7 @@
 <h1 align="center">💬 Agent SoulMate</h1>
 
 <p align="center">
-  <a href="https://github.com/ByteTitan-star/Agent_SoulMate/releases/tag/v1.0.0"><img src="https://img.shields.io/badge/Agent%20SoulMate-v1.0.0-14b8a6" alt="Agent SoulMate v1.0.0" /></a>
+  <a href="https://github.com/ByteTitan-star/Agent_SoulMate/releases/tag/v2.0.1"><img src="https://img.shields.io/badge/Agent%20SoulMate-v2.0.1-14b8a6" alt="Agent SoulMate v2.0.1" /></a>
   <img src="https://img.shields.io/badge/python-3.12-3776AB" alt="Python 3.12" />
   <img src="https://img.shields.io/badge/Django-4.2-092E20" alt="Django 4.2" />
   <img src="https://img.shields.io/badge/React-18-087EA4" alt="React 18" />
