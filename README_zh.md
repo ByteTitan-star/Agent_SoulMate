@@ -57,7 +57,7 @@ Agent SoulMate 是一个由本地模型（Ollama）驱动的全栈 AI 伴侣工�
 | RAG 知识库 | 角色级文档检索（Milvus）注入系统上下文 |
 | 音色克隆 | 在「我的角色」上传 10–30 秒 `.wav`，绑定 ElevenLabs `voice_id` 用于 TTS 回复 |
 | VAD + 全双工打断 | 浏览器能量 VAD；WebSocket `vad_start` / `interrupt` 取消进行中的 LLM 与 TTS，支持边说边打断 |
-| Agent 工具 | 天气、资讯等技能，让回答更可落地（当前为关键词触发） |
+| Agent 工具 | 天气、资讯等技能，经 LLM tool-calling 编排（可关闭后回退关键词触发） |
 | 统计缓存 | 基于 Redis 的看板聚合，附带预热管理命令 |
 
 ## 技术栈
@@ -163,6 +163,10 @@ ELEVENLABS_API_KEY=
 ELEVENLABS_VOICE_ID=
 VOICE_CLONE_PROVIDER=elevenlabs
 
+# Agent 多工具编排（设为 0 则回退关键词触发）
+AGENT_TOOL_ORCHESTRATION=1
+AGENT_TOOL_MAX_ROUNDS=3
+
 # 可选 Token 用量日志路径（默认在 backend/data/ 下）
 TOKEN_LOG_PATH=
 ```
@@ -211,7 +215,7 @@ CI 与 pre-commit 覆盖格式化、Lint 与基础密钥扫描。详见 `.pre-co
 | 已完成 | 数据看板 + Redis 统计缓存 |
 | 已完成 | 音色克隆 API 接入（ElevenLabs +「我的角色」上传） |
 | 已完成 | VAD + 全双工打断（能量 VAD、WS 打断、TTS 播放） |
-| 规划中 | 更丰富的多工具 Agent 编排（ReAct / tool-calling 循环，替代关键词触发） |
+| 已完成 | 更丰富的多工具 Agent 编排（LLM tool-calling 循环，支持关键词回退） |
 
 ## 许可证
 
